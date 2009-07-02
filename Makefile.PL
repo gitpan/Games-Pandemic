@@ -1,0 +1,50 @@
+
+use strict;
+use warnings;
+
+use ExtUtils::MakeMaker;
+
+WriteMakefile(
+  DISTNAME  => 'Games-Pandemic',
+  NAME      => 'Games::Pandemic',
+  AUTHOR    => 'Jerome\ Quelin',
+  ABSTRACT  => 'cooperative\ pandemic\ board\ game',
+  VERSION   => '0.4.0',
+  EXE_FILES => [ qw(bin/pandemic) ],
+  (eval { ExtUtils::MakeMaker->VERSION(6.21) } ? (LICENSE => 'gpl') : ()),
+  PREREQ_PM    => {
+    "Tk::PNG" => '0',
+    "Tk::ToolBar" => '0',
+    "FindBin" => '0',
+    "Tk::Font" => '0',
+    "Test::Script" => '0',
+    "Image::Size" => '0',
+    "Encode" => '0',
+    "List::Util" => '0',
+    "MooseX::Singleton;" => '0',
+    "File::Spec::Functions" => '0',
+    "Tk::Pane" => '0',
+    "List::MoreUtils" => '0',
+    "Geo::Mercator" => '0',
+    "MooseX::SemiAffordanceAccessor" => '0',
+    "Moose" => '0',
+    "Tk" => '0',
+    "File::Find::Rule" => '0',
+    "MooseX::POE" => '0',
+    "Moose::Role" => '0',
+    "YAML::Tiny" => '0',
+    "File::HomeDir" => '0',
+    "POE::Kernel" => '0',
+    "Readonly" => '0',
+    "Locale::TextDomain" => '0',
+    "perl" => '5.010',
+    "Test::More" => '0',
+    "Tk::JPEG" => '0',
+    "MooseX::AttributeHelpers" => '0',
+    "Devel::CheckOS" => '0',
+    "Module::Util" => '0',
+    "File::Basename" => '0',
+    "UNIVERSAL::require" => '0',
+    "POE" => '0',
+  },
+);
