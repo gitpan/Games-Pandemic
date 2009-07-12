@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Config;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: local configuration for Games::Pandemic
 
@@ -25,6 +25,8 @@ use YAML::Tiny qw{ LoadFile };
 my $default = {
     canvas_height => 600,
     canvas_width  => 1024,
+    win_height => 600+40*2+25,
+    win_width  => 1024+70,
 };
 
 # -- accessors
@@ -58,8 +60,7 @@ sub _build_options {
 
 
 no Moose;
-# singleton classes cannot be made immutable
-#__PACKAGE__->meta->make_immutable;
+__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -73,7 +74,7 @@ Games::Pandemic::Config - local configuration for Games::Pandemic
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =head1 SYNOPSIS
 

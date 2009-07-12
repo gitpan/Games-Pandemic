@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: cooperative pandemic board game
 
@@ -85,6 +85,9 @@ has _players_in_turn => (
 );
 has curplayer => ( is=>'rw', isa=>'Games::Pandemic::Player', weak_ref=>1 );
 
+# game state
+has state => ( is=>'rw', isa=>'Str' );
+
 
 # number of research stations remaining to be build
 has stations => (
@@ -96,6 +99,19 @@ has stations => (
         set => 'set_stations',
     },
 );
+
+# holds the player having too many cards - if any
+has too_many_cards => (
+    is       => 'rw',
+    isa      => 'Games::Pandemic::Player',
+    default  => undef,
+    clearer  => 'clear_too_many_cards',
+    weak_ref => 1,
+);
+
+
+has next_step => ( is=>'rw', isa=>'Str' );
+
 
 # -- public methods
 
@@ -115,8 +131,7 @@ sub run {
 }
 
 no Moose;
-# singleton classes cannot be made immutable
-#__PACKAGE__->meta->make_immutable;
+__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -130,7 +145,7 @@ Games::Pandemic - cooperative pandemic board game
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =head1 SYNOPSIS
 

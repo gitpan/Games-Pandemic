@@ -28,7 +28,7 @@ requires:
   MooseX::AttributeHelpers: 0
   MooseX::POE: 0
   MooseX::SemiAffordanceAccessor: 0
-  MooseX::Singleton;: 0
+  MooseX::Singleton: 0
   POE: 0
   POE::Kernel: 0
   Readonly: 0
@@ -46,4 +46,4 @@ requires:
 resources:
   homepage: http://search.cpan.org/dist/Games-Pandemic
   repository: http://github.com/jquelin/games-pandemic/
-version: 0.4.0
+version: 0.5.0

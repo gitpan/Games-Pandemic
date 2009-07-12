@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Deck;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: pandemic card deck
 
@@ -64,7 +64,7 @@ Games::Pandemic::Deck - pandemic card deck
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =head1 DESCRIPTION
 

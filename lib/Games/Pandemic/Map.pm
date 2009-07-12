@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Map;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: map information for Games::Pandemic
 
@@ -182,7 +182,7 @@ Games::Pandemic::Map - map information for Games::Pandemic
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =head1 METHODS
 

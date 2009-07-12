@@ -24,7 +24,10 @@ lib/Games/Pandemic/Role/Medic.pm
 lib/Games/Pandemic/Role/OperationsExpert.pm
 lib/Games/Pandemic/Role/Researcher.pm
 lib/Games/Pandemic/Role/Scientist.pm
-lib/Games/Pandemic/Tk/GiveCard.pm
+lib/Games/Pandemic/Tk/Dialog.pm
+lib/Games/Pandemic/Tk/Dialog/DropCards.pm
+lib/Games/Pandemic/Tk/Dialog/GiveCard.pm
+lib/Games/Pandemic/Tk/Dialog/Simple.pm
 lib/Games/Pandemic/Tk/Main.pm
 lib/Games/Pandemic/Tk/PlayerFrame.pm
 lib/Games/Pandemic/Tk/Utils.pm
@@ -32,6 +35,7 @@ lib/Games/Pandemic/Utils.pm
 lib/Games/Pandemic/share/actions/build.png
 lib/Games/Pandemic/share/actions/charter.png
 lib/Games/Pandemic/share/actions/discover.png
+lib/Games/Pandemic/share/actions/drop.png
 lib/Games/Pandemic/share/actions/flight.png
 lib/Games/Pandemic/share/actions/join.png
 lib/Games/Pandemic/share/actions/move.png
@@ -43,6 +47,7 @@ lib/Games/Pandemic/share/background.png
 lib/Games/Pandemic/share/card-infection.png
 lib/Games/Pandemic/share/card-player.png
 lib/Games/Pandemic/share/icon.png
+lib/Games/Pandemic/share/icons/warning-48.png
 lib/Games/Pandemic/share/maps/pandemic/background.jpg
 lib/Games/Pandemic/share/maps/pandemic/cube-0-16.png
 lib/Games/Pandemic/share/maps/pandemic/cube-0-32.png
@@ -76,3 +81,6 @@ lib/LocaleData/Games-Pandemic-messages.pot
 lib/LocaleData/fr/LC_MESSAGES/Games-Pandemic.mo
 lib/LocaleData/fr/LC_MESSAGES/Games-Pandemic.po
 t/00-compile.t
+t/release-pod-coverage.t
+t/release-pod-syntax.t
+w

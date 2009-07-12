@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Role::Scientist;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: scientist pandemic role
 
@@ -42,7 +42,7 @@ Games::Pandemic::Role::Scientist - scientist pandemic role
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =begin Pod::Coverage
 

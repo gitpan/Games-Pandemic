@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Tk::Main;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: main window for Games::Pandemic
 
@@ -31,7 +31,9 @@ use Tk::PNG;
 use Tk::ToolBar;
 
 use Games::Pandemic::Config;
-use Games::Pandemic::Tk::GiveCard;
+use Games::Pandemic::Tk::Dialog::DropCards;
+use Games::Pandemic::Tk::Dialog::GiveCard;
+use Games::Pandemic::Tk::Dialog::Simple;
 use Games::Pandemic::Tk::PlayerFrame;
 use Games::Pandemic::Tk::Utils;
 use Games::Pandemic::Utils;
@@ -52,13 +54,15 @@ has _widgets => (
     isa       => 'HashRef',
     default   => sub { {} },
     provides  => {
-        'set' => '_set_w',
-        'get' => '_w',
+        set    => '_set_w',
+        get    => '_w',
+        delete => '_del_w',
     },
 );
 
 # currently selected player
 has _selplayer => ( is => 'rw', weak_ref => 1, isa => 'Games::Pandemic::Player' );
+
 
 # it's not usually a good idea to retain a reference on a poe session,
 # since poe is already taking care of the references for us. however, we
@@ -85,6 +89,13 @@ sub START {
 # -- public events
 
 
+event action_done => sub {
+    my $self = $_[OBJECT];
+    $self->_update_status;
+};
+
+
+
 event build_station => sub {
     my ($self, $city) = @_[OBJECT, ARG0];
     $self->_draw_station($city);
@@ -104,6 +115,27 @@ event drop_card => sub {
     my ($self, $player, $card) = @_[OBJECT, ARG0..$#_];
     $self->_w("f$player")->rm_card($card);
     $self->_update_status; # deck count
+};
+
+
+
+event end_of_actions => sub {
+    my $self = $_[OBJECT];
+    $self->_update_actions;
+};
+
+
+
+event end_of_cards => sub {
+    my $self = $_[OBJECT];
+    $self->_update_actions;
+};
+
+
+
+event end_of_propagation => sub {
+    my $self = $_[OBJECT];
+    $self->_update_actions;
 };
 
 
@@ -147,10 +179,10 @@ event new_game => sub {
     my $s = $self->_session;
 
 
-    #
+    # add missing gui elements
     $self->_build_action_bar;
-    $self->_build_status_bar;
     $self->_build_players_bar;
+    $self->_build_status_bar;
 
     # remove everything on the canvas
     $c->delete('all');
@@ -227,9 +259,7 @@ event new_player => sub {
 
 event next_action => sub {
     my $self = $_[OBJECT];
-    my $game = Games::Pandemic->instance;
-    my $player = $game->curplayer;
-    $self->_w('lab_nbactions')->configure(-text=>$player->actions_left);
+    $self->_update_status;
     $self->_update_actions;
 };
 
@@ -256,6 +286,30 @@ event player_move => sub {
     my $dx = $to->coordx - $from->coordx;
     my $dy = $to->coordy - $from->coordy;
     $self->_w('canvas')->move( $player, $dx, $dy );
+};
+
+
+
+event too_many_cards => sub {
+    my ($self, $player) = @_[OBJECT, ARG0];
+
+    # warn user
+    my $format = T('Player %s has too many cards. '.
+        'Drop some cards (or use some action cards) before continuing.');
+    Games::Pandemic::Tk::Dialog::Simple->new(
+        parent => $mw,
+        title  => T('Warning'),
+        header => T('Too many cards'),
+        icon   => catfile($SHAREDIR, 'icons', 'warning-48.png'),
+        text   => sprintf($format, $player->role)
+    );
+
+    # prevent any action but dropping cards
+    $self->_w("but_action_$_")->configure(@ENOFF)
+        for qw{ build discover treat share pass };
+    $self->_w("but_action_drop")->configure(@ENON);
+
+    # FIXME: provide a way to drop cards
 };
 
 
@@ -319,6 +373,22 @@ event _action_build => sub {
 
 
 #
+# event: _action_drop()
+#
+# user wishes to drop a card, either from current player or if we're in
+# a situation of too many cards.
+#
+event _action_drop => sub {
+    my $game = Games::Pandemic->instance;
+    my $player = $game->too_many_cards // $game->curplayer; # FIXME://padre
+    Games::Pandemic::Tk::Dialog::DropCards->new(
+        parent => $mw,
+        player => $player,
+    );
+};
+
+
+#
 # event: _action_discover()
 #
 # user wishes to discover a cure.
@@ -375,7 +445,7 @@ event _action_share => sub {
         $K->post( controller => 'action', 'share', @cards, @players );
 
     } else {
-        Games::Pandemic::Tk::GiveCard->new(
+        Games::Pandemic::Tk::Dialog::GiveCard->new(
             parent  => $mw,
             cards   => \@cards,
             players => \@players,
@@ -417,10 +487,17 @@ event _action_treat => sub {
 # called when used clicked on a city on the canvas.
 #
 event _city_click => sub {
-    my $args = $_[ARG1];
-    my ($canvas) = @$args;
-
+    my ($self, $args) = @_[OBJECT, ARG1];
     my $game = Games::Pandemic->instance;
+
+    # if we're in a situation of too many cards for a player, user is
+    # not allowed to travel
+    return $self->yield('too_many_cards', $game->too_many_cards)
+        if defined $game->too_many_cards;
+
+    return unless $game->state eq 'actions';
+
+    my ($canvas) = @$args;
     my $map  = $game->map;
     my $player = $game->curplayer; # FIXME: dispatcher
 
@@ -441,6 +518,30 @@ event _city_click => sub {
         return $K->post( controller => 'action', 'fly', $player, $city )
             if $player->owns_city_card($city);
     }
+};
+
+
+#
+# event: _close()
+#
+# request to close current game.
+#
+event _close => sub {
+    return;
+    my $self = shift;
+    my $tb = $self->_w('tbactions');
+    $tb->{CONTAINER}->packForget; # FIXME: breaking encapsulation
+};
+
+
+#
+# event: _continue()
+#
+# request to move game forward.
+#
+event _continue => sub {
+    my $game = Games::Pandemic->instance;
+    $K->post( controller => 'continue' );
 };
 
 
@@ -475,7 +576,9 @@ sub _build_action_bar {
     my $session = $self->_session;
 
     # create the toolbar
-    my $tb = $self->_w('toolbar');
+    my $tbmain = $self->_w('toolbar');
+    my $tb = $mw->ToolBar(-movable => 0, -in=>$tbmain );
+    $self->_set_w('tbactions', $tb);
 
     # the toolbar widgets
     my @actions = (
@@ -484,6 +587,7 @@ sub _build_action_bar {
         [ 'treat',    T('Treat a disease')                         ],
         [ 'share',    T('Give a card')                             ],
         [ 'pass',     T('Pass your turn')                          ],
+        [ 'drop',     T('Drop some cards')                         ],
     );
     my @items = map {
         my ($action, $tip) = @$_;
@@ -495,9 +599,6 @@ sub _build_action_bar {
             $tip,
         ]
         } @actions;
-
-    # add a separator
-    unshift @items, ['separator'];
 
     # create the widgets
     foreach my $item ( @items ) {
@@ -515,6 +616,22 @@ sub _build_action_bar {
         );
         $self->_set_w( $name, $widget );
     }
+
+    # player information
+    $tb->separator( -movable => 0 );
+    my $labcurp = $tb->Label; # for current player image
+    $tb->Label( -text => T('actions left: ') );
+    my $labturn = $tb->Label;
+    $self->_set_w('lab_curplayer', $labcurp);
+    $self->_set_w('lab_nbactions', $labturn);
+
+    # continue button
+    my $but = $tb->Button(
+        -text    => T('Continue'),
+        -command => $session->postback('_continue'),
+        @ENOFF,
+    );
+    $self->_set_w('but_continue', $but);
 }
 
 
@@ -600,6 +717,12 @@ sub _build_gui {
     # set windowtitle
     $mw->title(T('Pandemic'));
     $mw->iconimage( pandemic_icon() );
+
+    # make sure window is big enough
+    my $config = Games::Pandemic::Config->instance;
+    my $width  = $config->get( 'win_width' );
+    my $height = $config->get( 'win_height' );
+    $mw->geometry($width . 'x' . $height);
 
     # WARNING: we need to create the toolbar object before anything
     # else. indeed, tk::toolbar loads the embedded icons in classinit,
@@ -690,7 +813,7 @@ sub _build_players_bar {
 #
 # $main->_build_status_bar;
 #
-# create the status bar at the bottom of the window.
+# create the status bar at the right of the window.
 #
 sub _build_status_bar {
     my $self = shift;
@@ -698,56 +821,48 @@ sub _build_status_bar {
     my $map  = $game->map;
 
     # the status bar itself is a frame
-    my $sb = $mw->Frame->pack(@BOTTOM, @FILLX, -before=>$self->_w('canvas'));
+    my $sb = $mw->Frame->pack(@RIGHT, @FILLX, -before=>$self->_w('canvas'));
 
     # research stations
-    my $fstations = $sb->Frame->pack(@LEFT, @PADX10);
+    my $fstations = $sb->Frame->pack(@TOP, @PADX10);
     $fstations->Label(
         -image => image( catfile( $SHAREDIR, 'research-station-32.png' ) ),
-    )->pack(@LEFT);
-    my $lab_nbstations = $fstations->Label->pack(@LEFT);
+    )->pack(@TOP);
+    my $lab_nbstations = $fstations->Label->pack(@TOP);
     $self->_set_w('lab_nbstations', $lab_nbstations );
 
     # diseases information
-    my $fdiseases = $sb->Frame->pack(@LEFT, @PADX10);
-    my $fcures    = $sb->Frame->pack(@LEFT, @PADX10);
+    my $fdiseases = $sb->Frame->pack(@TOP, @PADX10);
+    my $fcures    = $sb->Frame->pack(@TOP, @PADX10);
     foreach my $disease ( $map->all_diseases ) {
         $fdiseases->Label(
             -image => image( $disease->image('cube', 32) ),
-        )->pack(@LEFT);
-        my $lab_disease = $fdiseases->Label->pack(@LEFT);
+        )->pack(@TOP);
+        my $lab_disease = $fdiseases->Label->pack(@TOP);
         my $lab_cure = $fcures->Label(
             -image => image( $disease->image('cure', 32) ),
-        )->pack(@LEFT);
+        )->pack(@TOP);
         $self->_set_w("lab_disease_$disease", $lab_disease);
         $self->_set_w("lab_cure_$disease", $lab_cure);
     }
 
     # player cards information
     my $cards  = $game->cards;
-    my $fcards = $sb->Frame->pack(@LEFT, @PADX10);
+    my $fcards = $sb->Frame->pack(@TOP, @PADX10);
     $fcards->Label(
         -image => image( catfile( $SHAREDIR, 'card-player.png' ) ),
-    )->pack(@LEFT);
-    my $lab_cards = $fcards->Label->pack(@LEFT);
+    )->pack(@TOP);
+    my $lab_cards = $fcards->Label->pack(@TOP);
     $self->_set_w('lab_cards', $lab_cards);
 
     # infection information
     my $infection = $game->infection;
-    my $finfection = $sb->Frame->pack(@LEFT, @PADX10);
+    my $finfection = $sb->Frame->pack(@TOP, @PADX10);
     $finfection->Label(
         -image => image( catfile( $SHAREDIR, 'card-infection.png' ) ),
-    )->pack(@LEFT);
-    my $lab_infection = $finfection->Label->pack(@LEFT);
+    )->pack(@TOP);
+    my $lab_infection = $finfection->Label->pack(@TOP);
     $self->_set_w('lab_infection', $lab_infection);
-
-    # player information
-    my $fplayer = $sb->Frame->pack(@LEFT, @PADX10);
-    my $labcurp = $fplayer->Label->pack(@LEFT); # for current player image
-    $fplayer->Label( -text => T('actions left: ') )->pack(@LEFT);
-    my $labturn = $fplayer->Label->pack(@LEFT);
-    $self->_set_w('lab_curplayer', $labcurp);
-    $self->_set_w('lab_nbactions', $labturn);
 }
 
 
@@ -936,13 +1051,21 @@ sub _update_actions {
     my $game = Games::Pandemic->instance;
     my $player = $game->curplayer;
 
-    my @actions = qw{ build discover treat share pass };
-    foreach my $action ( @actions ) {
-        my $method = "is_${action}_possible";
-        $self->_w("but_action_$action")->configure(
-            $player->$method ? @ENON : @ENOFF );
+    my @actions = qw{ build discover treat share pass drop };
+    given ( $game->state ) {
+        when ('actions') {
+            foreach my $action ( @actions ) {
+                my $method = "is_${action}_possible";
+                $self->_w("but_action_$action")->configure(
+                    $player->$method ? @ENON : @ENOFF );
+            }
+            $self->_w('but_continue')->configure(@ENOFF);
+        }
+        when ('end_of_actions' || 'end_of_cards') {
+            $self->_w("but_action_$_")->configure(@ENOFF) for @actions;
+            $self->_w('but_continue')->configure(@ENON);
+        }
     }
-
 }
 
 
@@ -954,6 +1077,7 @@ sub _update_actions {
 sub _update_status {
     my $self = shift;
     my $game = Games::Pandemic->instance;
+    my $curp = $game->curplayer;
     my $map  = $game->map;
 
     # research stations
@@ -973,6 +1097,9 @@ sub _update_status {
     my $text2 = $deck2->nbcards . '-' . $deck2->nbdiscards;
     $self->_w('lab_cards')->configure( -text => $text1 );
     $self->_w('lab_infection')->configure(-text => $text2 );
+
+    # actions left
+    $self->_w('lab_nbactions')->configure(-text=>$curp->actions_left);
 }
 
 
@@ -991,7 +1118,7 @@ Games::Pandemic::Tk::Main - main window for Games::Pandemic
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =begin Pod::Coverage
 
@@ -1023,9 +1150,19 @@ license for non commercial use
 
 =item * pass icon by Zeus Box Studio, under a cc-by license
 
+=item * trash icon by Jojo Mendoza, under a cc-nd-nc license
+
+=item * warning icon by Gnome artists, under a gpl license
+
 =back 
 
 =head1 METHODS
+
+=head2 event: action_done()
+
+Received when current player has finished an action.
+
+
 
 =head2 event: build_station($city)
 
@@ -1042,6 +1179,24 @@ Received when a cure has been found for C<$disease>.
 =head2 event: drop_card($player, $card)
 
 Received when C<$player> drops a C<$card>.
+
+
+
+=head2 event: end_of_actions()
+
+Received when current player has finished her actions.
+
+
+
+=head2 event: end_of_cards()
+
+Received when current player has received her cards for this turn.
+
+
+
+=head2 event: end_of_propagation()
+
+Received when propagation is done
 
 
 
@@ -1086,6 +1241,13 @@ Received when C<$player> starts its turn.
 =head2 event: player_move( $player, $from ,$to )
 
 Received when C<$player> has moved between C<$from> and C<$to> cities.
+
+
+
+=head2 event: too_many_cards( $player )
+
+Received when C<$player> has too many cards: she must drop some before
+the game can continue.
 
 
 

@@ -7,8 +7,8 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Tk::GiveCard;
-our $VERSION = '0.4.0';
+package Games::Pandemic::Tk::Dialog::GiveCard;
+our $VERSION = '0.5.0';
 
 # ABSTRACT: sharing dialog window for Games::Pandemic
 
@@ -22,10 +22,12 @@ use POE;
 use Readonly;
 use Tk;
 
+extends 'Games::Pandemic::Tk::Dialog';
+
 use Games::Pandemic::Utils;
 use Games::Pandemic::Tk::Utils;
 
-Readonly my $K  => $poe_kernel;
+Readonly my $K => $poe_kernel;
 
 
 # -- accessors
@@ -37,10 +39,6 @@ has cards => (
     auto_deref => 1,
 );
 
-has parent => ( is=>'ro', required=>1, weak_ref=>1, isa=>'Tk::Widget' );
-
-has _toplevel => ( is=>'rw', isa=>'Tk::Toplevel' );
-
 has players => (
     is         => 'ro',
     isa        => 'ArrayRef',
@@ -51,70 +49,39 @@ has players => (
 has _card   => ( is=>'rw', weak_ref=>1, isa=>'Games::Pandemic::Card::City' );
 has _player => ( is=>'rw', weak_ref=>1, isa=>'Games::Pandemic::Player' );
 
-# it's not usually a good idea to retain a reference on a poe session,
-# since poe is already taking care of the references for us. however, we
-# need the session to call ->postback() to set the various gui callbacks
-# that will be fired upon gui events.
-has _session => ( is=>'rw', isa=>'POE::Session', weak_ref=>1 );
-
 
 # -- initialization
 
-#
-# BUILD()
-#
-# called as constructor initialization
-#
-sub BUILD {
-    my $self = shift;
-    $self->_build_gui;
-}
+sub _build_title   { T('Sharing') }
+sub _build_header  { T('Give a card') }
+sub _build__ok     { T('Give') }
+sub _build__cancel { T('Cancel') }
 
 
 # -- gui methods
 
 #
-# $dialog->_cancel;
-#
-# destroy the dialog without performing any action.
-#
-sub _cancel {
-    my $self = shift;
-    $self->_toplevel->destroy;
-}
-
-
-#
-# $dialog->_give;
+# $dialog->_valid;
 #
 # request to give a card & destroy the dialog.
 #
-sub _give {
+sub _valid {
     my $self = shift;
     $K->post( controller => 'action', 'share', $self->_card, $self->_player );
-    $self->_toplevel->destroy;
+    $self->_close;
 }
 
 
 # -- private methods
 
 #
-# $main->_build_gui;
+# $main->_valid;
 #
 # create the various gui elements.
 #
-sub _build_gui {
+augment _build_gui => sub {
     my $self = shift;
-    my $parent = $self->parent;
-
-    my $top = $parent->Toplevel;
-    $self->_set_toplevel($top);
-    $top->withdraw;
-
-    # set windowtitle
-    $top->title(T('Sharing...'));
-    $top->iconimage( pandemic_icon($top) );
-
+    my $top  = $self->_toplevel;
 
     my $fcenter = $top->Frame->pack(@TOP, @XFILL2);
 
@@ -136,7 +103,7 @@ sub _build_gui {
             # to display a radiobutton with image + text, we need to
             # create a radiobutton with a label just next to it.
             my $fplayer = $f->Frame->pack(@TOP, @FILLX);
-            $fplayer->Radiobutton(
+            my $rb = $fplayer->Radiobutton(
                 -text     => $player->role,
                 -variable => \$selplayer,
                 -value    => $player->role,
@@ -146,12 +113,12 @@ sub _build_gui {
             my $lab = $fplayer->Label(
                 -image    => image( $player->image('icon', 32), $top ),
             )->pack(@LEFT);
-            $lab->bind( '<1>', sub { $self->_set_player($player); $selplayer=$player->role; } );
+            $lab->bind( '<1>', sub { $rb->invoke; } );
         }
     }
 
     # if more than one card, select which one to give
-    my @cards = $self->cards;
+    my @cards = sort { $a->label cmp $b->label } $self->cards;
     $self->_set_card( $cards[0] );
     if ( @cards > 1 ) {
         # enclosed cards in their own frame
@@ -167,7 +134,7 @@ sub _build_gui {
             # to display a radiobutton with image + text, we need to
             # create a radiobutton with a label just next to it.
             my $fcity = $f->Frame->pack(@TOP, @FILLX);
-            $fcity->Radiobutton(
+            my $rb = $fcity->Radiobutton(
                 -image    => image($card->icon, $top),
                 -variable => \$selcard,
                 -value    => $card->label,
@@ -177,33 +144,10 @@ sub _build_gui {
                 -text   => $card->label,
                 -anchor => 'w',
             )->pack(@LEFT, @FILLX);
-            $lab->bind( '<1>', sub { $self->_set_card($card); $selcard=$card->label; } );
+            $lab->bind( '<1>', sub { $rb->invoke; } );
         }
     }
-
-
-
-    # the dialog buttons.
-    # note that we specify a bogus width in order for both buttons to be
-    # the same width. since we pack them with expand set to true, their
-    # width will grow - but equally. otherwise, their size would be
-    # proportional to their english text.
-    my $fbuttons = $top->Frame->pack(@TOP, @FILLX);
-    $fbuttons->Button(
-        -text    => T('Give'),
-        -width   => 10,
-        -command => sub { $self->_give },
-    )->pack(@LEFT, @XFILL2);
-    $fbuttons->Button(
-        -text    => T('Cancel'),
-        -width   => 10,
-        -command => sub { $self->_cancel },
-    )->pack(@LEFT, @XFILL2);
-
-    # center window & make it appear
-    $top->Popup( -popover => $parent);
-    $top->grab; # make it modal
-}
+};
 
 
 
@@ -218,11 +162,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Tk::GiveCard - sharing dialog window for Games::Pandemic
+Games::Pandemic::Tk::Dialog::GiveCard - sharing dialog window for Games::Pandemic
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =begin Pod::Coverage
 

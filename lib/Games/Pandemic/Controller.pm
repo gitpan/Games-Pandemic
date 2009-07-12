@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Controller;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: controller for a pandemic game
 
@@ -52,7 +52,47 @@ event action => sub {
     # FIXME: check src vs current player
 
     $K->yield("_action_$action", @params);
- };
+};
+
+
+
+event continue => sub {
+    my $game = Games::Pandemic->instance;
+    # FIXME: check src vs current player
+    given ( $game->state ) {
+        when ('end_of_actions')     { $K->yield('_draw_cards' ); }
+        when ('end_of_cards')       { $K->yield('_propagate'  ); }
+        when ('end_of_propagation') { $K->yield('_next_player'); }
+    }
+};
+
+
+
+event drop_cards => sub {
+    my ($player, @cards) = @_[ARG0..$#_];
+    my $game = Games::Pandemic->instance;
+    my $deck = $game->cards;
+
+    # FIXME: check src vs $player
+
+    # remove cards from player hands
+    foreach my $card ( @cards ) {
+        $player->drop_card( $card );
+        $deck->discard( $card );
+        $K->post( main => 'drop_card', $player, $card );
+    }
+
+    # check again that there are not too many cards
+    foreach my $player ( $game->all_players ) {
+        next if $player->nb_cards <= $player->max_cards;
+        $game->set_too_many_cards($player);
+        $K->post( main => 'too_many_cards', $player );
+        return;
+    }
+
+    $K->yield( $game->next_step ) if $game->too_many_cards;
+    $game->clear_too_many_cards;
+};
 
 
 
@@ -88,10 +128,10 @@ event new_game => sub {
     # configurable
     # FIXME: initial number of card depends of map / number of players
     $K->yield( _new_player => 'Researcher', 4 );
-    #$K->yield( _new_player => 'Medic', 4 );
+    $K->yield( _new_player => 'Scientist', 4 );
+    $K->yield( _new_player => 'Medic', 4 );
     #$K->yield( _new_player => 'Dispatcher', 4 );
     #$K->yield( _new_player => 'OperationsExpert', 4 );
-    $K->yield( _new_player => 'Scientist', 4 );
 
     # signal main window that we have started a new game
     $K->post( 'main' => 'new_game' );
@@ -234,12 +274,25 @@ event _action_discover => sub {
 #
 event _action_done => sub {
     my $game = Games::Pandemic->instance;
-    my $player = $game->curplayer;
 
-    $player->action_done;
-    # FIXME: update gui
+    # turn is done
+    my $curp = $game->curplayer;
+    $curp->action_done;
+    $K->post( main => 'action_done' );
 
-   my $event = $player->actions_left == 0 ? '_draw_cards' : '_next_action';
+    # next step would be...
+    my $event = $curp->actions_left == 0 ? '_end_of_actions' : '_next_action';
+
+    # ... unless a player has too many cards
+    foreach my $player ( $game->all_players ) {
+        next if $player->nb_cards <= $player->max_cards;
+        $game->set_too_many_cards($player);
+        $game->set_next_step($event);
+        $K->post( main => 'too_many_cards', $player );
+        return;
+    }
+
+    # everything's fine, we can continue
     $K->yield( $event );
 };
 
@@ -310,7 +363,8 @@ event _action_pass => sub {
 
     # nothing to do - user is just passing
     $curp->set_actions_left(0);
-    $K->yield( '_draw_cards' );
+    $K->post( main => 'action_done' );
+    $K->yield( '_end_of_actions' );
 };
 
 
@@ -384,8 +438,14 @@ event _deal_card => sub {
     }
 
     # FIXME: game over if no more card
-    # FIXME: if player has too much cards
+
+    # check if player has too much cards
+    if ( $player->nb_cards > $player->max_cards ) {
+        $game->set_too_many_cards($player);
+        $K->post( main => 'too_many_cards', $player );
+    }
 };
+
 
 #
 # event: _draw_cards()
@@ -393,7 +453,25 @@ event _deal_card => sub {
 # sent when player needs to draw her cards.
 #
 event _draw_cards => sub {
-    $K->yield( '_propagate' );
+    my $game = Games::Pandemic->instance;
+    my $curp = $game->curplayer;
+    # FIXME: is 2 cards fixed or map-dependant?
+    $K->yield( '_deal_card', $curp, 2 );
+
+    $game->set_state('end_of_cards');
+    $K->post( main => 'end_of_cards' );
+};
+
+
+#
+# event: _end_of_actions()
+#
+# sent when player finished her actions
+#
+event _end_of_actions => sub {
+    my $game = Games::Pandemic->instance;
+    $game->set_state('end_of_actions');
+    $K->post( main => 'end_of_actions' );
 };
 
 
@@ -415,6 +493,8 @@ event _infect => sub {
 
     # perform the infection & update the gui
     my $outbreak = $city->infect($nb, $disease);
+    # FIXME: update outbreak
+    # FIXME: gameover if too many outbreaks
     $K->post( main => 'infection', $city, $outbreak );
 
     return unless $outbreak;
@@ -464,6 +544,7 @@ event _next_player => sub {
         $player = $game->next_player;
     }
     $game->set_curplayer( $player );
+    $game->set_state('actions');
 
     $player->set_actions_left(4);
     $K->post( main => 'next_player', $player );
@@ -477,13 +558,24 @@ event _next_player => sub {
 # sent to do the regular disease propagation.
 #
 event _propagate => sub {
-    $K->yield( '_next_player' );
+    my $game   = Games::Pandemic->instance;
+    my $icards = $game->infection;
+
+    # propagate diseases
+    do {
+        my $card = $icards->next;
+        $K->yield( _infect => $card->city, 1 );
+        $icards->discard( $card );
+    } for 1 .. 2; # FIXME: infection rate
+
+    # update game state
+    $game->set_state('end_of_propagation');
+    $K->post( 'end_of_propagation' );
 };
 
 
 no Moose;
-# singleton classes cannot be made immutable
-#__PACKAGE__->meta->make_immutable;
+__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -497,7 +589,7 @@ Games::Pandemic::Controller - controller for a pandemic game
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =begin Pod::Coverage
 
@@ -506,6 +598,18 @@ START
 =end Pod::Coverage
 
 =head1 METHODS
+
+=head2 event: continue()
+
+Player wishes to move game forward.
+
+
+
+=head2 event: drop_cards( $player, @cards )
+
+Request from C<$player> to remove some C<@cards> from her hands.
+
+
 
 =head2 event: new_game()
 

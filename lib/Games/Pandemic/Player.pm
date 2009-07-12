@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Player;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: pandemic game player
 
@@ -37,6 +37,7 @@ has _cards => (
     default    => sub { {} },
     auto_deref => 1,
     provides   => {
+        count   => 'nb_cards',        # my $nb = $player->nb_cards;
         values  => 'all_cards',       # my @c = $player->all_cards;
         delete  => 'drop_card',       # $player->drop_card( $card );
         set     => '_add_card',       # $player->_add_card( $card, $card );
@@ -209,6 +210,13 @@ sub is_share_possible {
 sub is_pass_possible { 1 }
 
 
+
+sub is_drop_possible {
+    my $self = shift;
+    return $self->nb_cards;
+}
+
+
 #- methods to control whether an action (with all params) is valid
 
 
@@ -247,7 +255,7 @@ Games::Pandemic::Player - pandemic game player
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =head1 SYNOPSIS
 
@@ -403,6 +411,12 @@ course it is impossible if player's alone in the city.
 
 Return true if C<$player> can pass. Always true. Included here for the sake of
 completeness.
+
+
+
+=head2 my $bool = $player->is_drop_possible;
+
+Return true if C<$player> can drop a card. True if she has at least one card.
 
 
 

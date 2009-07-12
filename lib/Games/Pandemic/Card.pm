@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Card;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: base class for pandemic cards
 
@@ -39,7 +39,7 @@ Games::Pandemic::Card - base class for pandemic cards
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =head1 AUTHOR
 

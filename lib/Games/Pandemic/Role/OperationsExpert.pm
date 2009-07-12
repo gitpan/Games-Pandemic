@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Role::OperationsExpert;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: operations expert pandemic role
 
@@ -42,7 +42,7 @@ Games::Pandemic::Role::OperationsExpert - operations expert pandemic role
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =begin Pod::Coverage
 

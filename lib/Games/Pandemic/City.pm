@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::City;
-our $VERSION = '0.4.0';
+our $VERSION = '0.5.0';
 
 # ABSTRACT: city object for Games::Pandemic
 
@@ -110,6 +110,8 @@ sub infect {
     $nb      //= 1;
     $disease //= $self->disease;
 
+    # FIXME: check for eradication
+
     # perform the infection
     my $id  = $disease->id;
     my $old = $self->_get_infection($id) // 0; # FIXME//padre
@@ -161,7 +163,7 @@ Games::Pandemic::City - city object for Games::Pandemic
 
 =head1 VERSION
 
-version 0.4.0
+version 0.5.0
 
 =begin Pod::Coverage
 
