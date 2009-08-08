@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Player;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: pandemic game player
 
@@ -28,6 +28,13 @@ with 'MooseX::Traits';
 use Games::Pandemic::Utils;
 
 
+# -- default builders / finishers
+
+sub DEMOLISH {
+    my $self = shift;
+    debug( "~player: " . $self->role . "\n" );
+}
+
 # -- accessors
 
 has _cards => (
@@ -38,7 +45,7 @@ has _cards => (
     auto_deref => 1,
     provides   => {
         count   => 'nb_cards',        # my $nb = $player->nb_cards;
-        values  => 'all_cards',       # my @c = $player->all_cards;
+        values  => '_all_cards',      # my @c = $player->all_cards;
         delete  => 'drop_card',       # $player->drop_card( $card );
         set     => '_add_card',       # $player->_add_card( $card, $card );
         exists  => 'owns_card',       # my $bool = $player->owns_card($card);
@@ -100,6 +107,25 @@ sub image {
         $SHAREDIR, 'roles',
         join('-', $self->_role, $what, $size) . '.png'
     );
+}
+
+
+
+sub all_cards {
+    my $self = shift;
+
+    # fetch cards
+    my @cards = $self->_all_cards;
+    my @cities =
+        sort { $a->city->disease->name cmp $b->city->disease->name
+            || $a->label cmp $b->label }
+        grep { $_->isa('Games::Pandemic::Card::City') }
+        @cards;
+    my @specials =
+        sort { $a->label cmp $b->label }
+        grep { ! $_->isa('Games::Pandemic::Card::City') }
+        @cards;
+    return @specials, @cities;
 }
 
 
@@ -255,7 +281,13 @@ Games::Pandemic::Player - pandemic game player
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
+
+=begin Pod::Coverage
+
+DEMOLISH
+
+=end Pod::Coverage
 
 =head1 SYNOPSIS
 
@@ -332,6 +364,13 @@ Return the maximum number of cards that a player can have in her hands.
 Return the C$<path> to an image for the player role. C<$what> can be either
 C<icon> or C<pawn>. C<$size> can be one of C<orig>, or 32 or 16. Note that not
 all combinations are possible.
+
+
+
+=head2 my @cards = $player->all_cards;
+
+Return the list of cards owned by C<$player>. The list is sorted by type
+of card, then by disease and by name.
 
 
 

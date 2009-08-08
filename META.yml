@@ -2,7 +2,7 @@
 abstract: 'cooperative pandemic board game'
 author:
   - 'Jerome Quelin'
-generated_by: 'Dist::Zilla::Plugin::MetaYAML version 1.091610'
+generated_by: 'Dist::Zilla::Plugin::MetaYAML version '
 license: gpl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -12,6 +12,7 @@ requires:
   Cwd: 0
   Devel::CheckOS: 0
   Encode: 0
+  Exporter: 0
   File::Basename: 0
   File::Find::Rule: 0
   File::HomeDir: 0
@@ -29,11 +30,11 @@ requires:
   MooseX::POE: 0
   MooseX::SemiAffordanceAccessor: 0
   MooseX::Singleton: 0
+  MooseX::Traits: 0
   POE: 0
   POE::Kernel: 0
   Readonly: 0
   Test::More: 0
-  Test::Script: 0
   Tk: 0
   Tk::Font: 0
   Tk::JPEG: 0
@@ -46,4 +47,4 @@ requires:
 resources:
   homepage: http://search.cpan.org/dist/Games-Pandemic
   repository: http://github.com/jquelin/games-pandemic/
-version: 0.5.0
+version: 0.6.0

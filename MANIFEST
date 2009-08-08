@@ -7,9 +7,11 @@ Makefile.PL
 README
 bin/pandemic
 dist.ini
+dist.ini~
 lib/Games/Pandemic.pm
 lib/Games/Pandemic/Card.pm
 lib/Games/Pandemic/Card/City.pm
+lib/Games/Pandemic/Card/Epidemic.pm
 lib/Games/Pandemic/City.pm
 lib/Games/Pandemic/Config.pm
 lib/Games/Pandemic/Controller.pm
@@ -24,12 +26,13 @@ lib/Games/Pandemic/Role/Medic.pm
 lib/Games/Pandemic/Role/OperationsExpert.pm
 lib/Games/Pandemic/Role/Researcher.pm
 lib/Games/Pandemic/Role/Scientist.pm
+lib/Games/Pandemic/Tk/Action.pm
 lib/Games/Pandemic/Tk/Dialog.pm
 lib/Games/Pandemic/Tk/Dialog/DropCards.pm
 lib/Games/Pandemic/Tk/Dialog/GiveCard.pm
 lib/Games/Pandemic/Tk/Dialog/Simple.pm
 lib/Games/Pandemic/Tk/Main.pm
-lib/Games/Pandemic/Tk/PlayerFrame.pm
+lib/Games/Pandemic/Tk/PlayerCards.pm
 lib/Games/Pandemic/Tk/Utils.pm
 lib/Games/Pandemic/Utils.pm
 lib/Games/Pandemic/share/actions/build.png
@@ -81,6 +84,6 @@ lib/LocaleData/Games-Pandemic-messages.pot
 lib/LocaleData/fr/LC_MESSAGES/Games-Pandemic.mo
 lib/LocaleData/fr/LC_MESSAGES/Games-Pandemic.po
 t/00-compile.t
+t/release-meta-yaml.t
 t/release-pod-coverage.t
 t/release-pod-syntax.t
-w

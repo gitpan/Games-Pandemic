@@ -1,0 +1,206 @@
+# 
+# This file is part of Games-Pandemic
+# 
+# This software is Copyright (c) 2009 by Jerome Quelin.
+# 
+# This is free software, licensed under:
+# 
+#   The GNU General Public License, Version 3, June 2007
+# 
+package Games::Pandemic::Tk::Action;
+our $VERSION = '0.6.0';
+
+# ABSTRACT: action item for main Games::Pandemic window
+
+use 5.010;
+use strict;
+use warnings;
+
+use Moose;
+use MooseX::AttributeHelpers;
+use MooseX::SemiAffordanceAccessor;
+
+use Games::Pandemic::Tk::Utils;
+
+
+# -- attributes & accessors
+
+# a hash with action widgets.
+has _widgets => (
+    metaclass => 'Collection::Hash',
+    is        => 'ro',
+    isa       => 'HashRef',
+    default   => sub { {} },
+    provides  => {
+        delete  => 'rm_widget',
+        set     => '_set_widget',       # $action->_set_widget($widget, $widget);
+        values  => '_all_widgets',      # my @widgets = $action->_all_widgets;
+    },
+);
+
+# a list of bindings.
+has _bindings => (
+    metaclass => 'Collection::Array',
+    is        => 'ro',
+    isa       => 'ArrayRef',
+    default   => sub { [] },
+    provides  => {
+        push     => '_add_binding',      # $action->_add_binding($binding);
+        elements => '_all_bindings',     # my @bindings = $action->_all_bindings;
+    },
+);
+
+has is_enabled => (
+    metaclass => 'Bool',
+    is        => 'ro',
+    isa       => 'Bool',
+    default   => 1,
+    provides  => {
+        set   => '_enable',
+        unset => '_disable',
+    },
+);
+
+has callback => ( is => 'ro', isa => 'CodeRef',    required => 1, );
+has window   => ( is => 'ro', isa => 'Tk::Widget', required => 1, );
+
+
+
+# -- public methods
+
+
+sub add_widget {
+    my ($self, $widget) = @_;
+    $self->_set_widget($widget, $widget);
+    $widget->configure( $self->is_enabled ? @ENON : @ENOFF );
+}
+
+
+
+# rm_widget() implemented in _widget attribute declaration
+
+
+
+sub add_binding {
+    my ($self, $binding) = @_;
+    $self->_add_binding($binding);
+    $self->window->bind( $binding, $self->is_enabled ? $self->callback : '' );
+}
+
+
+
+
+sub enable {
+    my $self = shift;
+    $_->configure(@ENON) for $self->_all_widgets;
+    $self->window->bind( $_, $self->callback ) for $self->_all_bindings;
+    $self->_enable;
+}
+
+
+
+sub disable {
+    my $self = shift;
+    $_->configure(@ENOFF) for $self->_all_widgets;
+    $self->window->bind( $_, '' ) for $self->_all_bindings;
+    $self->_disable;
+}
+
+
+no Moose;
+__PACKAGE__->meta->make_immutable;
+
+1;
+
+
+
+=pod
+
+=head1 NAME
+
+Games::Pandemic::Tk::Action - action item for main Games::Pandemic window
+
+=head1 VERSION
+
+version 0.6.0
+
+=head1 SYNOPSIS
+
+    my $action = Games::Pandemic::Tk::Action->new(
+        window   => $mw,
+        callback => $session->postback('event'),
+    );
+    $action->add_widget( $menu_entry );
+    $action->add_widget( $button );
+    $action->add_binding( '<Control-F>' );
+    $action->enable;
+    ...
+    $action->disable;
+
+=head1 DESCRIPTION
+
+Menu entries are often also available in toolbars or other widgets. And
+sometimes, we want to enable or disable a given action, and this means
+having to update everything this action is allowed.
+
+This module helps managing actions in a GUI: just create a new object,
+associate some widgets and bindings with C<add_widget()> and then
+de/activate the whole action at once with C<enable()> or C<disable()>.
+
+The C<window> and C<callback> attributes are mandatory when calling the
+constructor.
+
+=head1 METHODS
+
+=head2 $action->add_widget( $widget );
+
+Associate C<$widget> with C<$action>. Enable or disable it depending on
+current action status.
+
+
+
+=head2 $action->rm_widget( $widget );
+
+De-associate C<$widget> with C$<action>.
+
+
+
+=head2 $action->add_binding( $binding );
+
+Associate C<$binding> with C<$action>. Enable or disable it depending on
+current action status. C<$binding> is a regular binding, as defined by
+L<Tk::bind>.
+
+It is not possible to remove a binding from an action.
+
+
+
+=head2 $action->enable;
+
+Activate all associated widgets.
+
+
+
+=head2 $action->disable;
+
+De-activate all associated widgets.
+
+
+
+=head1 AUTHOR
+
+  Jerome Quelin
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2009 by Jerome Quelin.
+
+This is free software, licensed under:
+
+  The GNU General Public License, Version 3, June 2007
+
+=cut 
+
+
+
+__END__

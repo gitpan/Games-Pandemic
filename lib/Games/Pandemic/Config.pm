@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Config;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: local configuration for Games::Pandemic
 
@@ -25,7 +25,7 @@ use YAML::Tiny qw{ LoadFile };
 my $default = {
     canvas_height => 600,
     canvas_width  => 1024,
-    win_height => 600+40*2+25,
+    win_height => 600+30+16,
     win_width  => 1024+70,
 };
 
@@ -48,7 +48,7 @@ has '_options' => (
 
 sub get {
     my ($self, $key) = @_;
-    my $val = $self->_get($key) // $default->{$key}; # /FIXME padre highlight
+    my $val = $self->_get($key) // $default->{$key};
 }
 
 # -- private subs
@@ -74,7 +74,7 @@ Games::Pandemic::Config - local configuration for Games::Pandemic
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
 
 =head1 SYNOPSIS
 

@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Map;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: map information for Games::Pandemic
 
@@ -73,7 +73,14 @@ has start_city => (
 has start_diseases => ( is=>'ro', isa=>'ArrayRef[Int]', auto_deref=>1, lazy_build => 1 );
 
 
-# -- default builders
+# -- default builders / finishers
+
+
+sub DEMOLISH {
+    my $self = shift;
+    debug( "~map: " . $self->name . "\n" );
+}
+
 
 sub _cities_builder {
     my $self = shift;
@@ -182,7 +189,13 @@ Games::Pandemic::Map - map information for Games::Pandemic
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
+
+=begin Pod::Coverage
+
+DEMOLISH
+
+=end Pod::Coverage
 
 =head1 METHODS
 

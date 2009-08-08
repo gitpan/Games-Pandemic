@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Controller;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: controller for a pandemic game
 
@@ -23,6 +23,7 @@ use MooseX::POE;
 use MooseX::SemiAffordanceAccessor;
 use Readonly;
 
+use Games::Pandemic::Card::Epidemic;
 use Games::Pandemic::Deck;
 use Games::Pandemic::Map::Pandemic;
 use Games::Pandemic::Player;
@@ -52,6 +53,20 @@ event action => sub {
     # FIXME: check src vs current player
 
     $K->yield("_action_$action", @params);
+};
+
+
+
+event close => sub {
+    my $game = Games::Pandemic->instance;
+    $game->clear_map;
+    $game->clear_cards_deck;
+    $game->clear_infection_deck;
+    $game->clear_players;
+    $game->clear_players_in_turn;
+    $game->clear_curplayer;
+    $game->clear_too_many_cards;
+    $game->has_ended;
 };
 
 
@@ -98,6 +113,7 @@ event drop_cards => sub {
 
 event new_game => sub {
     my $game = Games::Pandemic->instance;
+    $game->has_started;
 
     # create the map
     my $map = Games::Pandemic::Map::Pandemic->new;
@@ -108,6 +124,17 @@ event new_game => sub {
 
     # create the player cards deck
     my @pcards = shuffle $map->cards;
+    {
+        # insert epidemic cards
+        my $nbinit = 12;   # FIXME: 3 players * 4 cards, should not be fixed
+        my $epidemics = 4; # FIXME: depends on game difficulty
+        my $nbleft  = scalar(@pcards) - $nbinit;
+        my $perheap = int( $nbleft / $epidemics );
+        foreach my $i ( 0 .. $epidemics-1 ) {
+            my $offset = $i * $perheap + int( rand($perheap) );
+            splice @pcards, $offset, 0, Games::Pandemic::Card::Epidemic->new;
+        }
+    }
     my $pcards = Games::Pandemic::Deck->new( cards => \@pcards );
     $game->set_cards( $pcards );
 
@@ -123,18 +150,18 @@ event new_game => sub {
         $icards->discard( $card );
     }
 
+    # signal main window that we have started a new game
+    $K->post( 'main' => 'new_game' );
+
     # create the players
     # FIXME: by now we're creating a fixed set of players, should be
     # configurable
     # FIXME: initial number of card depends of map / number of players
     $K->yield( _new_player => 'Researcher', 4 );
     $K->yield( _new_player => 'Scientist', 4 );
-    $K->yield( _new_player => 'Medic', 4 );
+    #$K->yield( _new_player => 'Medic', 4 );
     #$K->yield( _new_player => 'Dispatcher', 4 );
     #$K->yield( _new_player => 'OperationsExpert', 4 );
-
-    # signal main window that we have started a new game
-    $K->post( 'main' => 'new_game' );
 
     # start the game
     $K->yield( '_next_player' );
@@ -433,11 +460,23 @@ event _deal_card => sub {
     # deal some cards to the players
     foreach my $i ( 1 .. $nb ) {
         my $card = $deck->next;
+
+        if ( not defined $card ) {
+            # no more cards - game is over
+            $K->yield('_no_more_cards');
+            return;
+        }
+
+        # check if we hit a new epidemic
+        if ( $card->isa('Games::Pandemic::Card::Epidemic') ) {
+            $K->yield( '_epidemic' );
+            next;
+        }
+
+        # regular card, dealing it to player
         $player->gain_card($card);
         $K->post(main=>'gain_card', $player, $card);
     }
-
-    # FIXME: game over if no more card
 
     # check if player has too much cards
     if ( $player->nb_cards > $player->max_cards ) {
@@ -464,6 +503,19 @@ event _draw_cards => sub {
 
 
 #
+# event: _game_over()
+#
+# sent when game is over (either win or loose), user cannot do anything
+# but close the game.
+#
+event _game_over => sub {
+    my $game = Games::Pandemic->instance;
+    $game->has_ended;
+    $K->post( main => 'game_over' );
+};
+
+
+#
 # event: _end_of_actions()
 #
 # sent when player finished her actions
@@ -472,6 +524,31 @@ event _end_of_actions => sub {
     my $game = Games::Pandemic->instance;
     $game->set_state('end_of_actions');
     $K->post( main => 'end_of_actions' );
+};
+
+
+#
+# event: _epidemic()
+#
+# an epidemic card has been drawn.
+#
+event _epidemic => sub {
+    my $game = Games::Pandemic->instance;
+    my $deck = $game->infection;
+
+    # epidemic first strikes hard a new city...
+    my $card = $deck->last;
+    my $city = $card->city;
+    $K->yield( '_infect', $city, 3 );
+    $K->post( main => 'epidemic', $city );
+
+    # then already hit cities ready for a new turn...
+    my @cards = $deck->past;
+    push @cards, $card;
+    $deck->clear_pile;
+    $deck->refill( shuffle @cards );
+
+    # FIXME: update infection rate
 };
 
 
@@ -553,6 +630,17 @@ event _next_player => sub {
 
 
 #
+# event: _no_more_cards()
+#
+# sent when controller cannot deal any more cards, and game is over.
+#
+event _no_more_cards => sub {
+    $K->post( main => 'no_more_cards' );
+    $K->yield('_game_over');
+};
+
+
+#
 # event: _propagate()
 #
 # sent to do the regular disease propagation.
@@ -589,7 +677,7 @@ Games::Pandemic::Controller - controller for a pandemic game
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
 
 =begin Pod::Coverage
 
@@ -598,6 +686,12 @@ START
 =end Pod::Coverage
 
 =head1 METHODS
+
+=head2 event: close()
+
+Player has closed current game.
+
+
 
 =head2 event: continue()
 

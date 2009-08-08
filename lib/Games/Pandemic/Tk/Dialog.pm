@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Tk::Dialog;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: base class for Games::Pandemic dialog windows
 
@@ -168,7 +168,7 @@ Games::Pandemic::Tk::Dialog - base class for Games::Pandemic dialog windows
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
 
 =begin Pod::Coverage
 

@@ -9,22 +9,30 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 
-use 5.010;
 use strict;
 use warnings;
 
-use File::Find::Rule;
 use Test::More;
-use Test::Script;
+use File::Find::Rule;
 
-my @files = File::Find::Rule->relative->file->name('*.pm')->in('lib');
-plan tests => scalar(@files) + 1;
+my @modules = File::Find::Rule->relative->file->name('*.pm')->in('lib');
+my @scripts = glob "bin/*";
 
-foreach my $file ( @files ) {
+plan tests => scalar(@modules) + scalar(@scripts);
+    
+foreach my $file ( @modules ) {
     my $module = $file;
     $module =~ s/[\/\\]/::/g;
     $module =~ s/\.pm$//;
     is( qx{ $^X -M$module -e "print '$module ok'" }, "$module ok", "$module loaded ok" );
 }
-
-script_compiles_ok( 'bin/pandemic', 'main script compiles' );
+    
+SKIP: {
+    eval "use Test::Script; 1;";
+    skip "Test::Script needed to test script compilation", scalar(@scripts) if $@;
+    foreach my $file ( @scripts ) {
+        my $script = $file;
+        $script =~ s!.*/!!;
+        script_compiles_ok( $file, "$script script compiles" );
+    }
+}

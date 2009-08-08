@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Deck;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: pandemic card deck
 
@@ -19,6 +19,16 @@ use warnings;
 use Moose;
 use MooseX::AttributeHelpers;
 use MooseX::SemiAffordanceAccessor;
+
+use Games::Pandemic::Utils;
+
+
+# -- builders / finishers
+
+sub DEMOLISH {
+    my $self = shift;
+    debug( "~deck: $self\n" );
+}
 
 
 # -- accessors
@@ -31,6 +41,7 @@ has cards => (
     provides   => {
         count => 'nbcards',
         pop   => 'next',
+        push  => 'refill',
         shift => 'last',
     },
 );
@@ -41,10 +52,10 @@ has _pile => (
     default    => sub { [] },
     auto_deref => 1,
     provides   => {
-        clear    => '_clear_pile',
+        clear    => 'clear_pile',
         count    => 'nbdiscards',
-        push     => 'discard',
         elements => 'past',
+        push     => 'discard',
     },
 );
 
@@ -64,7 +75,13 @@ Games::Pandemic::Deck - pandemic card deck
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
+
+=begin Pod::Coverage
+
+DEMOLISH
+
+=end Pod::Coverage
 
 =head1 DESCRIPTION
 

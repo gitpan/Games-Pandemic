@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Tk::Utils;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: Tk utilities for gui building
 
@@ -96,7 +96,7 @@ Games::Pandemic::Tk::Utils - Tk utilities for gui building
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
 
 =head1 DESCRIPTION
 

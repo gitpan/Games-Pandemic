@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Tk::Dialog::GiveCard;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: sharing dialog window for Games::Pandemic
 
@@ -118,7 +118,7 @@ augment _build_gui => sub {
     }
 
     # if more than one card, select which one to give
-    my @cards = sort { $a->label cmp $b->label } $self->cards;
+    my @cards = $self->cards;
     $self->_set_card( $cards[0] );
     if ( @cards > 1 ) {
         # enclosed cards in their own frame
@@ -166,7 +166,7 @@ Games::Pandemic::Tk::Dialog::GiveCard - sharing dialog window for Games::Pandemi
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
 
 =begin Pod::Coverage
 

@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Tk::Dialog::DropCards;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: dropping cards dialog window for Games::Pandemic
 
@@ -114,7 +114,7 @@ augment _build_gui => sub {
     my $top  = $self->_toplevel;
 
     my $player = $self->player;
-    my @cards  = sort { $a->label cmp $b->label } $player->all_cards;
+    my @cards  = $player->all_cards;
 
     my $f = $top->Frame->pack(@TOP, @XFILL2, @PAD10);
     $f->Label(
@@ -157,7 +157,7 @@ Games::Pandemic::Tk::Dialog::DropCards - dropping cards dialog window for Games:
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
 
 =begin Pod::Coverage
 

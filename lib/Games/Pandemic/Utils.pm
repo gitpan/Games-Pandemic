@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Utils;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: various utilities for Games::Pandemic
 
@@ -87,7 +87,7 @@ Games::Pandemic::Utils - various utilities for Games::Pandemic
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
 
 =head1 DESCRIPTION
 

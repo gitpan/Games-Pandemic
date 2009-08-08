@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Tk::Main;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: main window for Games::Pandemic
 
@@ -31,10 +31,11 @@ use Tk::PNG;
 use Tk::ToolBar;
 
 use Games::Pandemic::Config;
+use Games::Pandemic::Tk::Action;
 use Games::Pandemic::Tk::Dialog::DropCards;
 use Games::Pandemic::Tk::Dialog::GiveCard;
 use Games::Pandemic::Tk::Dialog::Simple;
-use Games::Pandemic::Tk::PlayerFrame;
+use Games::Pandemic::Tk::PlayerCards;
 use Games::Pandemic::Tk::Utils;
 use Games::Pandemic::Utils;
 
@@ -59,6 +60,20 @@ has _widgets => (
         delete => '_del_w',
     },
 );
+
+# a hash with all the actions.
+has _actions => (
+    metaclass => 'Collection::Hash',
+    is        => 'ro',
+    isa       => 'HashRef',
+    default   => sub { {} },
+    provides  => {
+        set    => '_set_action',
+        get    => '_action',
+    },
+);
+
+
 
 # currently selected player
 has _selplayer => ( is => 'rw', weak_ref => 1, isa => 'Games::Pandemic::Player' );
@@ -113,7 +128,7 @@ event cure => sub {
 
 event drop_card => sub {
     my ($self, $player, $card) = @_[OBJECT, ARG0..$#_];
-    $self->_w("f$player")->rm_card($card);
+    $K->post( cards => 'drop_card', $player, $card );
     $self->_update_status; # deck count
 };
 
@@ -140,10 +155,34 @@ event end_of_propagation => sub {
 
 
 
+event epidemic => sub {
+    my ($self, $city) = @_[OBJECT, ARG0];
+
+    # warn user
+    my $format = T('%s epidemic strikes in %s.');
+    Games::Pandemic::Tk::Dialog::Simple->new(
+        parent => $mw,
+        title  => T('Warning'),
+        header => T('New epidemic'),
+        icon   => catfile($SHAREDIR, 'icons', 'warning-48.png'),
+        text   => sprintf($format, $city->disease->name, $city->name)
+    );
+};
+
+
+
 event gain_card => sub {
     my ($self, $player, $card) = @_[OBJECT, ARG0..$#_];
-    $self->_w("f$player")->add_card($card);
+    $K->post( cards => 'gain_card', $player, $card );
     $self->_update_status; # deck count
+};
+
+
+
+event game_over => sub {
+    my $self = shift;
+    $self->_action($_)->disable for ( "continue",
+        map { "action_$_" } qw{ build discover treat share pass drop } );
 };
 
 
@@ -178,14 +217,19 @@ event new_game => sub {
     my $c = $self->_w('canvas');
     my $s = $self->_session;
 
-
     # add missing gui elements
     $self->_build_action_bar;
-    $self->_build_players_bar;
     $self->_build_status_bar;
+    Games::Pandemic::Tk::PlayerCards->new( parent=>$mw );
 
     # remove everything on the canvas
     $c->delete('all');
+
+    # prevent some actions
+    $self->_action('new')->disable;
+    $self->_action('load')->disable;
+    $self->_action('close')->enable;
+    $self->_action('show_cards')->enable;
 
     # the background image
     my $map    = Games::Pandemic->instance->map;
@@ -231,11 +275,8 @@ event new_game => sub {
 event new_player => sub {
     my ($self, $player) = @_[OBJECT, ARG0];
 
-    # creating the frame holding the player cards
-    my $fplayers = $self->_w( 'fplayers' );
-    my $f = Games::Pandemic::Tk::PlayerFrame->new(player=>$player, parent=>$fplayers);
-    $self->_set_w( "f$player", $f );
-    $f->pack(@LEFT);
+    # adding the player to player cards window
+    $K->post( cards => 'new_player', $player );
 
     # drawing the pawn on the canvas
     my $c = $self->_w('canvas');
@@ -275,6 +316,22 @@ event next_player => sub {
     $K->delay( _blink_player => $TIME_BLINK, 0 );
 
     $self->_w('lab_curplayer')->configure(-image=>image($player->image('icon', 32)));
+};
+
+
+
+event no_more_cards => sub {
+    # warn user
+    my $format = T('%s epidemic strikes in %s.');
+    Games::Pandemic::Tk::Dialog::Simple->new(
+        parent => $mw,
+        title  => T('You lost!'),
+        header => T('No more cards'),
+        icon   => catfile($SHAREDIR, 'icons', 'warning-48.png'),
+        text   => T(  'Game is over, you lost: '
+                    . 'there are no more cards to deal. '
+                    . 'Try harder next time!' ),
+    );
 };
 
 
@@ -527,10 +584,31 @@ event _city_click => sub {
 # request to close current game.
 #
 event _close => sub {
-    return;
     my $self = shift;
-    my $tb = $self->_w('tbactions');
+    my $game = Games::Pandemic->instance;
+
+    # allow some actions
+    $self->_action('new')->enable;
+    $self->_action('load')->enable;
+    $self->_action('close')->disable;
+    $self->_action('show_cards')->disable;
+
+    # remove everything from current game
+    my $tb = $self->_del_w('tbactions');
     $tb->{CONTAINER}->packForget; # FIXME: breaking encapsulation
+    $tb->destroy;
+    $self->_del_w('infobar')->destroy;
+
+    my $c = $self->_w('canvas');
+    $c->delete('all');
+
+    # destroy player cards window
+    $K->post( cards => 'destroy' );
+
+    # redraw initial actions
+    $self->_draw_init_screen;
+
+    $K->post( controller => 'close' );
 };
 
 
@@ -550,7 +628,11 @@ event _continue => sub {
 #
 # request a new game to the controller
 #
-event _new => sub { $K->post('controller' => 'new_game'); };
+event _new => sub {
+    my $game = Games::Pandemic->instance;
+    return if $game->is_in_play;
+    $K->post('controller' => 'new_game');
+};
 
 
 #
@@ -560,6 +642,16 @@ event _new => sub { $K->post('controller' => 'new_game'); };
 #
 event _quit => sub {
     exit; # FIXME: do better than that...
+};
+
+
+#
+# event: _show_cards()
+#
+# user request to toggle player cards visbility
+#
+event _show_cards => sub {
+    $K->post( cards => 'toggle_visibility' );
 };
 
 
@@ -589,32 +681,21 @@ sub _build_action_bar {
         [ 'pass',     T('Pass your turn')                          ],
         [ 'drop',     T('Drop some cards')                         ],
     );
-    my @items = map {
-        my ($action, $tip) = @$_;
-        [
-            'Button',
-            image( catfile($SHAREDIR, 'actions', "$action.png") ),
-            "but_action_$action",
-            "_action_$action",
-            $tip,
-        ]
-        } @actions;
 
     # create the widgets
-    foreach my $item ( @items ) {
-        my ($type, $image, $name, $event, $tip) = @$item;
+    foreach my $item ( @actions ) {
+        my ($action, $tip) = @$item;
 
-        # separator is a special case
-        $tb->separator( -movable => 0 ), next if $type eq 'separator';
+        my $image = image( catfile($SHAREDIR, 'actions', "$action.png") );
+        my $event = "_action_$action";
 
         # regular toolbar widgets
-        my $widget = $tb->$type(
+        my $widget = $tb->Button(
             -image       => $image,
             -tip         => $tip,
-            #-accelerator => $item->[2],
             -command     => $session->postback($event),
         );
-        $self->_set_w( $name, $widget );
+        $self->_action("action_$action")->add_widget($widget);
     }
 
     # player information
@@ -631,7 +712,7 @@ sub _build_action_bar {
         -command => $session->postback('_continue'),
         @ENOFF,
     );
-    $self->_set_w('but_continue', $but);
+    $self->_action('continue')->add_widget($but);
 }
 
 
@@ -663,39 +744,8 @@ sub _build_canvas {
         $mw->bind('Tk::Canvas', "<Control-Key-$key>", undef);
     }
 
-    # create the initial welcome screen
-    my @tags = ( -tags => ['startup'] );
-    # first a background image...
-    $c->createImage (
-        $width/2, $height/2,
-        -anchor => 'center',
-        -image  => image( catfile($SHAREDIR, "background.png") ),
-        @tags,
-    );
-    # ... then some basic actions
-    my @buttons = (
-        [ T('New game') ,  1, '_new'  ],
-        [ T('Join game') , 0, '_join' ],
-        [ T('Load game') , 0, '_load' ],
-    );
-    my $pad = 25;
-    my $font = $mw->Font(-weight=>'bold');
-    foreach my $i ( 0 .. $#buttons ) {
-        my ($text, $active, $event) = @{ $buttons[$i] };
-        # create the 'button' (really a clickable text)
-        my $id = $c->createText(
-            $width/2, $height/2 - (@buttons)/2*$pad + $i*$pad,
-            $active ? @ENON : @ENOFF,
-            -text         => $text,
-            -fill         => '#dddddd',
-            -activefill   => 'white',
-            -disabledfill => '#999999',
-            -font         => $font,
-            @tags,
-        );
-        # now bind click on this text
-        $c->bind( $id, '<1>', $s->postback($event) );
-    }
+    # initial actions
+    $self->_draw_init_screen;
 }
 
 
@@ -706,6 +756,7 @@ sub _build_canvas {
 #
 sub _build_gui {
     my $self = shift;
+    my $s = $self->_session;
 
     # hide window during its creation to avoid flickering
     $mw->withdraw;
@@ -724,12 +775,29 @@ sub _build_gui {
     my $height = $config->get( 'win_height' );
     $mw->geometry($width . 'x' . $height);
 
+    # create the actions
+    my @enabled  = qw{ new load quit };
+    my @disabled = (
+        qw{ close continue show_cards },
+        map { "action_$_" } qw{ build discover drop pass share treat },
+    );
+    foreach my $what ( @enabled, @disabled ) {
+        my $action = Games::Pandemic::Tk::Action->new(
+            window   => $mw,
+            callback => $s->postback("_$what"),
+        );
+        $self->_set_action($what, $action);
+    }
+    # allow some actions
+    $self->_action($_)->enable  for @enabled;
+    $self->_action($_)->disable for @disabled;
+
     # WARNING: we need to create the toolbar object before anything
     # else. indeed, tk::toolbar loads the embedded icons in classinit,
     # that is when the first object of the class is created - and not
     # during compile time.
     $self->_build_toolbar;
-    $self->_build_menu;
+    $self->_build_menubar;
     $self->_build_canvas;
 
     # center & show the window
@@ -739,11 +807,55 @@ sub _build_gui {
 
 
 #
-# $main->_build_menu;
+# $self->_build_menu( $mnuname, $mnulabel, @submenus );
+#
+# Create the menu $label, with all the @submenus.
+# @submenus is a list of [$name, $icon, $accel, $label] items.
+# Store the menu items under the name menu_$mnuname_$name.
+#
+sub _build_menu {
+    my ($self, $mnuname, $mnulabel, @submenus) = @_;
+    my $menubar = $self->_w('menubar');
+    my $s = $self->_session;
+
+    my $menu = $menubar->cascade(-label => $mnulabel);
+    foreach my $item ( @submenus ) {
+        my ($name, $icon, $accel, $label) = @$item;
+
+        # separators are easier
+        if ( $name eq '---' ) {
+            $menu->separator;
+            next;
+        }
+
+        # regular buttons
+        my $action = $self->_action($name);
+        my $widget = $menu->command(
+            -label       => $label,
+            -image       => $icon,
+            -compound    => 'left',
+            -accelerator => $accel,
+            -command     => $action->callback,
+        );
+        $self->_set_w("menu_${mnuname}_${name}", $widget);
+
+        # create the bindings. note: we also need to bind the lowercase
+        # letter too!
+        $action->add_widget($widget);
+        $accel =~ s/Ctrl\+/Control-/;
+        $action->add_binding("<$accel>");
+        $accel =~ s/Control-(\w)/"Control-" . lc($1)/e;
+        $action->add_binding("<$accel>");
+    }
+}
+
+
+#
+# $main->_build_menubar;
 #
 # create the window's menu.
 #
-sub _build_menu {
+sub _build_menubar {
     my $self = shift;
     my $s = $self->_session;
 
@@ -754,59 +866,37 @@ sub _build_menu {
 
     my $menubar = $mw->Menu;
     $mw->configure(-menu => $menubar );
+    $self->_set_w('menubar', $menubar);
 
     # menu game
     my @mnu_game = (
-    [ '_new',   'filenew16',   'Ctrl+N', T('~New game')   ],
-    [ '_load',  'fileopen16',  'Ctrl+O', T('~Load game')  ],
-    [ '_close', 'fileclose16', 'Ctrl+W', T('~Close game') ],
-    [ '---'                                               ],
-    [ '_quit',  'actexit16',   'Ctrl+Q', T('~Quit')       ],
+    [ 'new',   'filenew16',   'Ctrl+N', T('~New game')   ],
+    [ 'load',  'fileopen16',  'Ctrl+O', T('~Load game')  ],
+    [ 'close', 'fileclose16', 'Ctrl+W', T('~Close game') ],
+    [ '---'                                              ],
+    [ 'quit',  'actexit16',   'Ctrl+Q', T('~Quit')       ],
     );
+    $self->_build_menu('game', T('~Game'), @mnu_game);
 
-    my $game = $menubar->cascade(-label => T('~Game'));
-    foreach my $item ( @mnu_game ) {
-        my ($action, $icon, $accel, $label) = @$item;
+    # menu view
+    my @mnu_view = (
+    [ 'show_cards', '', 'F2', T('Player ~cards') ],
+    );
+    $self->_build_menu('view', T('~View'), @mnu_view);
 
-        # separators are easier
-        if ( $action eq '---' ) {
-            $game->separator;
-            next;
-        }
-
-        # regular buttons
-        $game->command(
-            -label       => $label,
-            -image       => $icon,
-            -compound    => 'left',
-            -accelerator => $accel,
-            -command     => $s->postback($action),
-        );
-
-        # create the bindings. note: we also need to bind the lowercase
-        # letter too!
-        $accel =~ s/Ctrl\+/Control-/;
-        $mw->bind("<$accel>", $s->postback($action));
-        $accel =~ s/Control-(\w)/"Control-" . lc($1)/e;
-        $mw->bind("<$accel>", $s->postback($action));
-    }
-}
-
-
-#
-# $main->_build_players_bar;
-#
-# create the players bar, with the various players and their cards.
-#
-sub _build_players_bar {
-    my $self = shift;
-
-    my $fplayers = $mw->Scrolled(
-        'Frame',
-        -scrollbars => 's',
-        -height     => 40,  # 32 pixels + border
-    )->pack(@BOTTOM, @FILLX, -before=>$self->_w('canvas'));
-    $self->_set_w( fplayers => $fplayers );
+    # menu actions
+    my @mnu_action = (
+    [ 'action_build'    , '', 'b', T('~Build a research station') ],
+    [ 'action_discover' , '', 'c', T('Discover a ~cure')          ],
+    [ 'action_treat'    , '', 't', T('~Treat a disease')          ],
+    [ 'action_share'    , '', 's', T('~Give a card')              ],
+    [ 'action_pass'     , '', 'p', T('~Pass your turn')           ],
+    [ '---'                                                       ],
+    [ 'action_drop'     , '', 'd', T('~Drop some cards')          ],
+    [ '---'                                                       ],
+    [ 'continue'        , '', 'Return', T('Conti~nue')          ],
+    );
+    $self->_build_menu('action', T('~Action'), @mnu_action);
 }
 
 
@@ -822,6 +912,7 @@ sub _build_status_bar {
 
     # the status bar itself is a frame
     my $sb = $mw->Frame->pack(@RIGHT, @FILLX, -before=>$self->_w('canvas'));
+    $self->_set_w( infobar => $sb );
 
     # research stations
     my $fstations = $sb->Frame->pack(@TOP, @PADX10);
@@ -881,28 +972,29 @@ sub _build_toolbar {
 
     # the toolbar widgets
     my @tb = (
-        [ 'Button', 'filenew22',   'tbut_new',   '_new',   T('New game')   ],
-        [ 'Button', 'fileopen22',  'tbut_load',  '_load',  T('Load game')  ],
-        [ 'Button', 'fileclose22', 'tbut_close', '_close', T('Close game') ],
-        [ 'Button', 'actexit22',   'tbut_quit',  '_quit',  T('Quit')       ],
-        #[ 'separator'                                                     ],
+        [ 'Button', 'filenew22',   'new',   T('New game')   ],
+        [ 'Button', 'fileopen22',  'load',  T('Load game')  ],
+        [ 'Button', 'fileclose22', 'close', T('Close game') ],
+        [ 'Button', 'actexit22',   'quit',  T('Quit')       ],
     );
 
     # create the widgets
     foreach my $item ( @tb ) {
-        my ($type, $image, $name, $event, $tip) = @$item;
+        my ($type, $image, $name, $tip) = @$item;
 
         # separator is a special case
         $tb->separator( -movable => 0 ), next if $type eq 'separator';
+        my $action = $self->_action($name);
 
         # regular toolbar widgets
         my $widget = $tb->$type(
             -image       => $image,
             -tip         => $tip,
             #-accelerator => $item->[2],
-            -command     => $session->postback($event),
+            -command     => $action->callback,
         );
-        $self->_set_w( $name, $widget );
+        $self->_set_w( "tbut_$name", $widget );
+        $action->add_widget( $widget );
     }
 }
 
@@ -1021,6 +1113,57 @@ sub _draw_infection {
 
 
 #
+# $main->_draw_init_screen;
+#
+# draw splash image on canvas + initial actions, to present user with a
+# non-empty window by default.
+#
+sub _draw_init_screen {
+    my $self = shift;
+    my $c = $self->_w('canvas');
+    my $s = $self->_session;
+
+    my $config = Games::Pandemic::Config->instance;
+    my $width  = $config->get( 'canvas_width' );
+    my $height = $config->get( 'canvas_height' );
+
+    # create the initial welcome screen
+    my @tags = ( -tags => ['startup'] );
+    # first a background image...
+    $c->createImage (
+        $width/2, $height/2,
+        -anchor => 'center',
+        -image  => image( catfile($SHAREDIR, "background.png") ),
+        @tags,
+    );
+    # ... then some basic actions
+    my @buttons = (
+        [ T('New game') ,  1, '_new'  ],
+        [ T('Join game') , 0, '_join' ],
+        [ T('Load game') , 0, '_load' ],
+    );
+    my $pad = 25;
+    my $font = $mw->Font(-weight=>'bold');
+    foreach my $i ( 0 .. $#buttons ) {
+        my ($text, $active, $event) = @{ $buttons[$i] };
+        # create the 'button' (really a clickable text)
+        my $id = $c->createText(
+            $width/2, $height/2 - (@buttons)/2*$pad + $i*$pad,
+            $active ? @ENON : @ENOFF,
+            -text         => $text,
+            -fill         => '#dddddd',
+            -activefill   => 'white',
+            -disabledfill => '#999999',
+            -font         => $font,
+            @tags,
+        );
+        # now bind click on this text
+        $c->bind( $id, '<1>', $s->postback($event) );
+    }
+}
+
+
+#
 # $main->_draw_station($city);
 #
 # draw a research station on the canvas for the given $city.
@@ -1055,15 +1198,15 @@ sub _update_actions {
     given ( $game->state ) {
         when ('actions') {
             foreach my $action ( @actions ) {
-                my $method = "is_${action}_possible";
-                $self->_w("but_action_$action")->configure(
-                    $player->$method ? @ENON : @ENOFF );
+                my $check  = "is_${action}_possible";
+                my $method = $player->$check ? 'enable' : 'disable';
+                $self->_action("action_$action")->$method;
             }
-            $self->_w('but_continue')->configure(@ENOFF);
+            $self->_action('continue')->disable;
         }
         when ('end_of_actions' || 'end_of_cards') {
-            $self->_w("but_action_$_")->configure(@ENOFF) for @actions;
-            $self->_w('but_continue')->configure(@ENON);
+            $self->_action("action_$_")->disable for @actions;
+            $self->_action('continue')->enable;
         }
     }
 }
@@ -1118,7 +1261,7 @@ Games::Pandemic::Tk::Main - main window for Games::Pandemic
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
 
 =begin Pod::Coverage
 
@@ -1200,9 +1343,21 @@ Received when propagation is done
 
 
 
+=head2 event: epidemic($city)
+
+Received when a new epidemic strikes C<$city>.
+
+
+
 =head2 event: gain_card($player, $card)
 
 Received when C<$player> got a new C<$card>.
+
+
+
+=head2 event: game_over()
+
+Received when game is over: user cannot advance the game any more.
 
 
 
@@ -1235,6 +1390,12 @@ Received when player needs to do its next action.
 =head2 event: next_player( $player )
 
 Received when C<$player> starts its turn.
+
+
+
+=head2 event: no_more_cards()
+
+Received when game is over due to a lack of cards to deal.
 
 
 

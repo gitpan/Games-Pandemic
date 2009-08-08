@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::Card;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: base class for pandemic cards
 
@@ -18,6 +18,17 @@ use warnings;
 
 use Moose;
 use MooseX::SemiAffordanceAccessor;
+
+use Games::Pandemic::Utils;
+
+
+# -- builders / finishers
+
+sub DEMOLISH {
+    my $self = shift;
+    #debug( "~card: " . $self->label . "\n" );
+}
+
 
 # -- accessors
 
@@ -39,7 +50,13 @@ Games::Pandemic::Card - base class for pandemic cards
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
+
+=begin Pod::Coverage
+
+DEMOLISH
+
+=end Pod::Coverage
 
 =head1 AUTHOR
 

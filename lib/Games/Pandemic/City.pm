@@ -8,7 +8,7 @@
 #   The GNU General Public License, Version 3, June 2007
 # 
 package Games::Pandemic::City;
-our $VERSION = '0.5.0';
+our $VERSION = '0.6.0';
 
 # ABSTRACT: city object for Games::Pandemic
 
@@ -90,7 +90,7 @@ has neighbour_ids => (
 
 sub DEMOLISH {
     my $self = shift;
-    debug( "~city: " . $self->name . "\n" );
+    #debug( "~city: " . $self->name . "\n" );
 }
 
 
@@ -163,7 +163,7 @@ Games::Pandemic::City - city object for Games::Pandemic
 
 =head1 VERSION
 
-version 0.5.0
+version 0.6.0
 
 =begin Pod::Coverage
 

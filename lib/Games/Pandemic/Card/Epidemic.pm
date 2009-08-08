@@ -7,29 +7,30 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Role::Dispatcher;
+package Games::Pandemic::Card::Epidemic;
 our $VERSION = '0.6.0';
 
-# ABSTRACT: dispatcher pandemic role
+# ABSTRACT: epidemic card for pandemic
 
 use 5.010;
 use strict;
 use warnings;
 
-use Moose::Role;
+use Moose;
+use MooseX::SemiAffordanceAccessor;
+
 use Games::Pandemic::Utils;
 
+extends 'Games::Pandemic::Card';
 
-around can_join_others => sub { 1 };
-around can_move_others => sub { 1 };
-sub color { '#af4377' }
-sub role  { T('Dispatcher') }
-sub _role { 'dispatcher' }
+# -- default builders
+
+sub _build_icon  { '' }
+sub _build_label { T('epidemic') }
 
 
-no Moose::Role;
-# moose::role cannot be made immutable
-#__PACKAGE__->meta->make_immutable;
+no Moose;
+__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -39,18 +40,16 @@ no Moose::Role;
 
 =head1 NAME
 
-Games::Pandemic::Role::Dispatcher - dispatcher pandemic role
+Games::Pandemic::Card::Epidemic - epidemic card for pandemic
 
 =head1 VERSION
 
 version 0.6.0
 
-=begin Pod::Coverage
+=head1 DESCRIPTION
 
-color
-role
-
-=end Pod::Coverage
+This package implements a simple epidemic card, not meant to be
+displayed at all.
 
 =head1 AUTHOR
 

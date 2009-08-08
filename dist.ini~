@@ -10,7 +10,6 @@ copyright_year   = 2009
 
 [AllFiles]
 
-[CompileTests]
 [MetaTests]
 [PodTests]
 
@@ -56,11 +55,11 @@ repository = http://github.com/jquelin/games-pandemic/
 
 ; -- generate meta files
 
-[License]
-[MakeMaker]
 [MetaYAML]
+[License]
 [Readme]
 [Manifest]
+[MakeMaker]
 
 
 ; -- release
