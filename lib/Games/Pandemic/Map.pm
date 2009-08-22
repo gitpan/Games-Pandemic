@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Map;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: map information for Games::Pandemic
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Map;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: map information for Games::Pandemic
 
 use File::Spec::Functions qw{ catdir catfile };
 use Moose;
@@ -189,7 +189,7 @@ Games::Pandemic::Map - map information for Games::Pandemic
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =begin Pod::Coverage
 

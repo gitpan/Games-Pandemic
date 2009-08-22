@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Disease;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: disease object for Games::Pandemic
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Disease;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: disease object for Games::Pandemic
 
 use File::Spec::Functions qw{ catfile };
 use Moose;
@@ -49,13 +49,13 @@ has nbleft => (
 has nbmax => ( is => 'ro', isa => 'Int', required   => 1 );
 has _map  => ( is => 'ro', isa => 'Games::Pandemic::Map',required => 1, weak_ref => 1 );
 
-has is_cured => (
+has has_cure => (
     metaclass => 'Bool',
     is        => 'ro',
     isa       => 'Bool',
     default   => 0,
     provides  => {
-        set     => 'cure',
+        set     => 'find_cure',
     }
 );
 
@@ -94,7 +94,7 @@ Games::Pandemic::Disease - disease object for Games::Pandemic
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =begin Pod::Coverage
 

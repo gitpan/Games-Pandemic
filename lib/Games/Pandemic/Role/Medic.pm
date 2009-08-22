@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Role::Medic;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: medic pandemic role
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Role::Medic;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: medic pandemic role
 
 use Moose::Role;
 use Games::Pandemic::Utils;
@@ -43,7 +43,7 @@ Games::Pandemic::Role::Medic - medic pandemic role
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =begin Pod::Coverage
 

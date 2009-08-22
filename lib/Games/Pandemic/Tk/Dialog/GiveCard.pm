@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Tk::Dialog::GiveCard;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: sharing dialog window for Games::Pandemic
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Tk::Dialog::GiveCard;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: sharing dialog window for Games::Pandemic
 
 use Moose;
 use MooseX::SemiAffordanceAccessor;
@@ -166,7 +166,7 @@ Games::Pandemic::Tk::Dialog::GiveCard - sharing dialog window for Games::Pandemi
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =begin Pod::Coverage
 

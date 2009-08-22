@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Tk::PlayerCards;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: window holding player cards for Games::Pandemic
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Tk::PlayerCards;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: window holding player cards for Games::Pandemic
 
 use List::Util qw{ max };
 use Moose;
@@ -196,7 +196,7 @@ Games::Pandemic::Tk::PlayerCards - window holding player cards for Games::Pandem
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =begin Pod::Coverage
 

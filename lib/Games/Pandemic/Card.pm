@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Card;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: base class for pandemic cards
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Card;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: base class for pandemic cards
 
 use Moose;
 use MooseX::SemiAffordanceAccessor;
@@ -50,7 +50,7 @@ Games::Pandemic::Card - base class for pandemic cards
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =begin Pod::Coverage
 

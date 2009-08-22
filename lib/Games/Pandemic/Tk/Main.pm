@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Tk::Main;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: main window for Games::Pandemic
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Tk::Main;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: main window for Games::Pandemic
 
 use File::Spec::Functions qw{ catfile };
 use Image::Size;
@@ -35,6 +35,7 @@ use Games::Pandemic::Tk::Action;
 use Games::Pandemic::Tk::Dialog::DropCards;
 use Games::Pandemic::Tk::Dialog::GiveCard;
 use Games::Pandemic::Tk::Dialog::Simple;
+use Games::Pandemic::Tk::Dialog::ViewCards;
 use Games::Pandemic::Tk::PlayerCards;
 use Games::Pandemic::Tk::Utils;
 use Games::Pandemic::Utils;
@@ -111,6 +112,21 @@ event action_done => sub {
 
 
 
+event all_cures_discovered => sub {
+    # warn user
+    Games::Pandemic::Tk::Dialog::Simple->new(
+        parent => $mw,
+        title  => T('You won!'),
+        header => T('Congratulations'),
+        icon   => catfile($SHAREDIR, 'icons', 'success-48.png'),
+        text   => T(  "You won: you discovered all the cures."
+                    . "\n\n"
+                    . "Perhaps is it time to augment difficulty?" ),
+    );
+};
+
+
+
 event build_station => sub {
     my ($self, $city) = @_[OBJECT, ARG0];
     $self->_draw_station($city);
@@ -181,6 +197,7 @@ event gain_card => sub {
 
 event game_over => sub {
     my $self = shift;
+    $self->_update_status;
     $self->_action($_)->disable for ( "continue",
         map { "action_$_" } qw{ build discover treat share pass drop } );
 };
@@ -321,17 +338,26 @@ event next_player => sub {
 
 
 event no_more_cards => sub {
+    my $self = $_[OBJECT];
+
     # warn user
-    my $format = T('%s epidemic strikes in %s.');
-    Games::Pandemic::Tk::Dialog::Simple->new(
-        parent => $mw,
-        title  => T('You lost!'),
-        header => T('No more cards'),
-        icon   => catfile($SHAREDIR, 'icons', 'warning-48.png'),
-        text   => T(  'Game is over, you lost: '
-                    . 'there are no more cards to deal. '
-                    . 'Try harder next time!' ),
-    );
+    my $header = T('No more cards');
+    my $reason = T('there are no more cards to deal.');
+
+    $self->_game_lost($header, $reason);
+};
+
+
+
+event no_more_cubes => sub {
+    my ($self, $disease) = @_[OBJECT, ARG0];
+
+    # warn user
+    my $fmt_reason = T( "the %s pandemic is too spread out to be cured." );
+    my $header = T('Pandemic out of control');
+    my $reason = sprintf $fmt_reason, $disease->name;
+
+    $self->_game_lost($header, $reason);
 };
 
 
@@ -362,9 +388,8 @@ event too_many_cards => sub {
     );
 
     # prevent any action but dropping cards
-    $self->_w("but_action_$_")->configure(@ENOFF)
-        for qw{ build discover treat share pass };
-    $self->_w("but_action_drop")->configure(@ENON);
+    $self->_action("action_$_")->disable for qw{ build discover treat share pass };
+    $self->_action("action_drop")->enable;
 
     # FIXME: provide a way to drop cards
 };
@@ -560,7 +585,7 @@ event _city_click => sub {
 
     # find city clicked
     my $item = $canvas->find( withtag => 'current' );
-    my ($id) = grep { s/^c-(.*)/$1/ } $canvas->gettags($item);
+    my ($id) = map { /^c-(.*)/ ? $1 : () } $canvas->gettags($item);
     my $city = $map->city($id);
 
     if ( $city eq $player->location ) {
@@ -652,6 +677,60 @@ event _quit => sub {
 #
 event _show_cards => sub {
     $K->post( cards => 'toggle_visibility' );
+};
+
+
+#
+# event: _show_past_cards()
+#
+# user request to see cards already played / dropped.
+#
+event _show_past_cards => sub {
+    my $game = Games::Pandemic->instance;
+    my $deck = $game->cards;
+
+    if ( $deck->nbdiscards ) {
+        Games::Pandemic::Tk::Dialog::ViewCards->new(
+            parent => $mw,
+            title  => T('Information'),
+            header => T('Discard pile'),
+            cards  => [ $deck->past ],
+        );
+    } else {
+        # nothing to show
+        Games::Pandemic::Tk::Dialog::Simple->new(
+            parent => $mw,
+            icon   => catfile($SHAREDIR, 'icons', 'warning-48.png'),
+            text   => T('No cards in the discard pile.'),
+        );
+    }
+};
+
+
+#
+# event: _show_past_infections()
+#
+# user request to see infections already endured.
+#
+event _show_past_infections => sub {
+    my $game = Games::Pandemic->instance;
+    my $deck = $game->infection;
+
+    if ( $deck->nbdiscards ) {
+        Games::Pandemic::Tk::Dialog::ViewCards->new(
+            parent => $mw,
+            title  => T('Information'),
+            header => T('Past infections'),
+            cards  => [ $deck->past ],
+        );
+    } else {
+        # nothing to show
+        Games::Pandemic::Tk::Dialog::Simple->new(
+            parent => $mw,
+            icon   => catfile($SHAREDIR, 'icons', 'warning-48.png'),
+            text   => T('No past infections.'),
+        );
+    }
 };
 
 
@@ -909,6 +988,7 @@ sub _build_status_bar {
     my $self = shift;
     my $game = Games::Pandemic->instance;
     my $map  = $game->map;
+    my $s    = $self->_session;
 
     # the status bar itself is a frame
     my $sb = $mw->Frame->pack(@RIGHT, @FILLX, -before=>$self->_w('canvas'));
@@ -940,20 +1020,24 @@ sub _build_status_bar {
     # player cards information
     my $cards  = $game->cards;
     my $fcards = $sb->Frame->pack(@TOP, @PADX10);
-    $fcards->Label(
+    my $img_cards = $fcards->Label(
         -image => image( catfile( $SHAREDIR, 'card-player.png' ) ),
     )->pack(@TOP);
     my $lab_cards = $fcards->Label->pack(@TOP);
     $self->_set_w('lab_cards', $lab_cards);
+    $img_cards->bind('<Button-1>', $s->postback('_show_past_cards'));
+    $lab_cards->bind('<Button-1>', $s->postback('_show_past_cards'));
 
     # infection information
     my $infection = $game->infection;
     my $finfection = $sb->Frame->pack(@TOP, @PADX10);
-    $finfection->Label(
+    my $img_infection = $finfection->Label(
         -image => image( catfile( $SHAREDIR, 'card-infection.png' ) ),
     )->pack(@TOP);
     my $lab_infection = $finfection->Label->pack(@TOP);
     $self->_set_w('lab_infection', $lab_infection);
+    $img_infection->bind('<Button-1>', $s->postback('_show_past_infections'));
+    $lab_infection->bind('<Button-1>', $s->postback('_show_past_infections'));
 }
 
 
@@ -1184,6 +1268,28 @@ sub _draw_station {
     );
 }
 
+
+#
+# $main->_game_lost( $header, $reason );
+#
+# show a standard simple dialog announcing end of game for a given $reason.
+#
+sub _game_lost {
+    my ($self, $header, $reason) = @_;
+    my $text = T( 'Game is over, you lost: ' )
+             . $reason
+             . "\n\n"
+             . T( 'Try harder next time!' );
+    Games::Pandemic::Tk::Dialog::Simple->new(
+        parent => $mw,
+        title  => T('You lost!'),
+        header => $header,
+        icon   => catfile($SHAREDIR, 'icons', 'warning-48.png'),
+        text   => $text,
+    );
+};
+
+
 #
 # $main->_update_actions;
 #
@@ -1230,7 +1336,7 @@ sub _update_status {
     foreach my $disease ( $map->all_diseases ) {
         $self->_w("lab_disease_$disease")->configure(-text => $disease->nbleft);
         $self->_w("lab_cure_$disease")->configure(
-            $disease->is_cured ? (@ENON) : (@ENOFF) );
+            $disease->has_cure ? (@ENON) : (@ENOFF) );
     }
 
     # cards information
@@ -1261,7 +1367,7 @@ Games::Pandemic::Tk::Main - main window for Games::Pandemic
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =begin Pod::Coverage
 
@@ -1297,6 +1403,8 @@ license for non commercial use
 
 =item * warning icon by Gnome artists, under a gpl license
 
+=item * success icon by Gnome artists, under a gpl license
+
 =back 
 
 =head1 METHODS
@@ -1304,6 +1412,12 @@ license for non commercial use
 =head2 event: action_done()
 
 Received when current player has finished an action.
+
+
+
+=head2 event: all_cures_discovered()
+
+Received when game is won due to all cures being discovered
 
 
 
@@ -1394,6 +1508,12 @@ Received when C<$player> starts its turn.
 
 
 =head2 event: no_more_cards()
+
+Received when game is over due to a lack of cards to deal.
+
+
+
+=head2 event: no_more_cubes( $disease )
 
 Received when game is over due to a lack of cards to deal.
 

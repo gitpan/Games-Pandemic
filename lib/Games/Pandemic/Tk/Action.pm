@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Tk::Action;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: action item for main Games::Pandemic window
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Tk::Action;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: action item for main Games::Pandemic window
 
 use Moose;
 use MooseX::AttributeHelpers;
@@ -122,7 +122,7 @@ Games::Pandemic::Tk::Action - action item for main Games::Pandemic window
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =head1 SYNOPSIS
 

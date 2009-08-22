@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: cooperative pandemic board game
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: cooperative pandemic board game
 
 # although it's not strictly needed to load POE::Kernel manually (since
 # MooseX::POE will load it anyway), we're doing it here to make sure poe
@@ -165,7 +165,7 @@ Games::Pandemic - cooperative pandemic board game
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =head1 SYNOPSIS
 

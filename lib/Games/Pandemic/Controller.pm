@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Controller;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: controller for a pandemic game
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Controller;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: controller for a pandemic game
 
 use List::Util      qw{ shuffle };
 use List::MoreUtils qw{ all };
@@ -246,7 +246,7 @@ event _action_treat => sub {
     my $nb = $city->get_infection($disease);
     return $K->yield('_next_action') if $nb == 0;
 
-    my $nbtreat = $curp->treat_all # FIXME: cure discovered
+    my $nbtreat = ( $curp->treat_all || $disease->has_cure )
         ? $nb
         : 1;
 
@@ -271,7 +271,7 @@ event _action_discover => sub {
 
     # various checks
     return $K->yield('_next_action')
-        if $disease->is_cured                                # nothing to do
+        if $disease->has_cure                                # nothing to do
         || !$curp->location->has_station                     # no research station
         || scalar(@cards) != $curp->cards_needed             # not enough cards
         || not(all { $_->isa('Games::Pandemic::Card::City') } @cards) # not the right cards
@@ -285,10 +285,14 @@ event _action_discover => sub {
         $deck->discard($card);
         $K->post( main => 'drop_card', $curp, $card );
     }
-    $disease->cure;
+    $disease->find_cure;
     $K->post( main => 'cure', $disease );
 
     # FIXME: golden cure
+
+    # check if game is won
+    return $K->yield('_all_cures_discovered')
+        if all { $_->has_cure } $game->map->all_diseases;
 
     $K->yield('_action_done');
 };
@@ -447,6 +451,17 @@ event _action_shuttle => sub {
 
 
 #
+# event: _all_cures_discovered()
+#
+# sent when game has been won.
+#
+event _all_cures_discovered => sub {
+    $K->post( main => 'all_cures_discovered' );
+    $K->yield( '_game_over' );
+};
+
+
+#
 # _deal_card( $player, $nb );
 #
 # deal $nb cards to $player. check whether player has too much cards in
@@ -566,7 +581,10 @@ event _infect => sub {
 
     # update the disease
     $disease->take($nb);
-    #if ( $disease->nbleft <= 0 ) { # FIXME: gameover }
+    if ( $disease->nbleft <= 0 ) {
+        $K->yield('_no_more_cubes', $disease);
+        return;
+    }
 
     # perform the infection & update the gui
     my $outbreak = $city->infect($nb, $disease);
@@ -641,6 +659,18 @@ event _no_more_cards => sub {
 
 
 #
+# event: _no_more_cubes($disease)
+#
+# sent when a $disease has spread over any control, and game is over.
+#
+event _no_more_cubes => sub {
+    my $disease = $_[ARG0];
+    $K->post( main => 'no_more_cubes', $disease );
+    $K->yield('_game_over');
+};
+
+
+#
 # event: _propagate()
 #
 # sent to do the regular disease propagation.
@@ -677,7 +707,7 @@ Games::Pandemic::Controller - controller for a pandemic game
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =begin Pod::Coverage
 

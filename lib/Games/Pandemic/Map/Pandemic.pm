@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Map::Pandemic;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: standard pandemic map from real game
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Map::Pandemic;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: standard pandemic map from real game
 
 use Geo::Mercator;
 use Moose;
@@ -134,7 +134,7 @@ Games::Pandemic::Map::Pandemic - standard pandemic map from real game
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =head1 AUTHOR
 

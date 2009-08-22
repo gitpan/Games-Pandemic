@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Config;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: local configuration for Games::Pandemic
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Config;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: local configuration for Games::Pandemic
 
 use Games::Pandemic::Utils;
 use MooseX::Singleton;          # should come before any other moose
@@ -74,7 +74,7 @@ Games::Pandemic::Config - local configuration for Games::Pandemic
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =head1 SYNOPSIS
 

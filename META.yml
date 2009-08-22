@@ -2,16 +2,99 @@
 abstract: 'cooperative pandemic board game'
 author:
   - 'Jerome Quelin'
-generated_by: 'Dist::Zilla::Plugin::MetaYAML version '
+generated_by: 'Dist::Zilla::Plugin::MetaYAML version 1.092310'
 license: gpl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
 name: Games-Pandemic
+provides:
+  Games::Pandemic:
+    file: lib/Games/Pandemic.pm
+    version: 0.7.0
+  Games::Pandemic::Card:
+    file: lib/Games/Pandemic/Card.pm
+    version: 0.7.0
+  Games::Pandemic::Card::City:
+    file: lib/Games/Pandemic/Card/City.pm
+    version: 0.7.0
+  Games::Pandemic::Card::Epidemic:
+    file: lib/Games/Pandemic/Card/Epidemic.pm
+    version: 0.7.0
+  Games::Pandemic::City:
+    file: lib/Games/Pandemic/City.pm
+    version: 0.7.0
+  Games::Pandemic::Config:
+    file: lib/Games/Pandemic/Config.pm
+    version: 0.7.0
+  Games::Pandemic::Controller:
+    file: lib/Games/Pandemic/Controller.pm
+    version: 0.7.0
+  Games::Pandemic::Deck:
+    file: lib/Games/Pandemic/Deck.pm
+    version: 0.7.0
+  Games::Pandemic::Disease:
+    file: lib/Games/Pandemic/Disease.pm
+    version: 0.7.0
+  Games::Pandemic::Map:
+    file: lib/Games/Pandemic/Map.pm
+    version: 0.7.0
+  Games::Pandemic::Map::Pandemic:
+    file: lib/Games/Pandemic/Map/Pandemic.pm
+    version: 0.7.0
+  Games::Pandemic::Player:
+    file: lib/Games/Pandemic/Player.pm
+    version: 0.7.0
+  Games::Pandemic::Role::Dispatcher:
+    file: lib/Games/Pandemic/Role/Dispatcher.pm
+    version: 0.7.0
+  Games::Pandemic::Role::Medic:
+    file: lib/Games/Pandemic/Role/Medic.pm
+    version: 0.7.0
+  Games::Pandemic::Role::OperationsExpert:
+    file: lib/Games/Pandemic/Role/OperationsExpert.pm
+    version: 0.7.0
+  Games::Pandemic::Role::Researcher:
+    file: lib/Games/Pandemic/Role/Researcher.pm
+    version: 0.7.0
+  Games::Pandemic::Role::Scientist:
+    file: lib/Games/Pandemic/Role/Scientist.pm
+    version: 0.7.0
+  Games::Pandemic::Tk::Action:
+    file: lib/Games/Pandemic/Tk/Action.pm
+    version: 0.7.0
+  Games::Pandemic::Tk::Dialog:
+    file: lib/Games/Pandemic/Tk/Dialog.pm
+    version: 0.7.0
+  Games::Pandemic::Tk::Dialog::DropCards:
+    file: lib/Games/Pandemic/Tk/Dialog/DropCards.pm
+    version: 0.7.0
+  Games::Pandemic::Tk::Dialog::GiveCard:
+    file: lib/Games/Pandemic/Tk/Dialog/GiveCard.pm
+    version: 0.7.0
+  Games::Pandemic::Tk::Dialog::Simple:
+    file: lib/Games/Pandemic/Tk/Dialog/Simple.pm
+    version: 0.7.0
+  Games::Pandemic::Tk::Dialog::ViewCards:
+    file: lib/Games/Pandemic/Tk/Dialog/ViewCards.pm
+    version: 0.7.0
+  Games::Pandemic::Tk::Main:
+    file: lib/Games/Pandemic/Tk/Main.pm
+    version: 0.7.0
+  Games::Pandemic::Tk::PlayerCards:
+    file: lib/Games/Pandemic/Tk/PlayerCards.pm
+    version: 0.7.0
+  Games::Pandemic::Tk::Utils:
+    file: lib/Games/Pandemic/Tk/Utils.pm
+    version: 0.7.0
+  Games::Pandemic::Utils:
+    file: lib/Games/Pandemic/Utils.pm
+    version: 0.7.0
 requires:
   Cwd: 0
   Devel::CheckOS: 0
   Encode: 0
+  English: 0
   Exporter: 0
   File::Basename: 0
   File::Find::Rule: 0
@@ -47,4 +130,4 @@ requires:
 resources:
   homepage: http://search.cpan.org/dist/Games-Pandemic
   repository: http://github.com/jquelin/games-pandemic/
-version: 0.6.0
+version: 0.7.0

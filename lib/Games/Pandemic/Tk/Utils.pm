@@ -7,14 +7,14 @@
 # 
 #   The GNU General Public License, Version 3, June 2007
 # 
-package Games::Pandemic::Tk::Utils;
-our $VERSION = '0.6.0';
-
-# ABSTRACT: Tk utilities for gui building
-
 use 5.010;
 use strict;
 use warnings;
+
+package Games::Pandemic::Tk::Utils;
+our $VERSION = '0.7.0';
+
+# ABSTRACT: Tk utilities for gui building
 
 use File::Spec::Functions qw{ catfile };
 use Moose;
@@ -27,7 +27,7 @@ our @EXPORT = qw{
     @TOP @BOTTOM @LEFT @RIGHT
     @FILLX  @FILLY  @FILL2
     @XFILLX @XFILLY @XFILL2
-    @PAD1   @PAD10 @PAD20 @PADX10
+    @PAD1   @PAD2   @PAD5   @PAD10  @PAD20 @PADX10
     @IPAD10
     @ENON   @ENOFF
     image   pandemic_icon
@@ -50,9 +50,11 @@ our @XFILLY  = ( -expand => 1, -fill => 'y'    );
 our @XFILL2  = ( -expand => 1, -fill => 'both' );
 
 # padding
-our @PAD1    = ( -padx => 1, -pady => 1);
-our @PAD10   = ( -padx => 10, -pady => 10);
-our @PAD20   = ( -padx => 20, -pady => 20);
+our @PAD1    = ( -padx => 1,  -pady => 1 );
+our @PAD2    = ( -padx => 2,  -pady => 2 );
+our @PAD5    = ( -padx => 5,  -pady => 5 );
+our @PAD10   = ( -padx => 10, -pady => 10 );
+our @PAD20   = ( -padx => 20, -pady => 20 );
 our @PADX10  = ( -padx => 10 );
 
 # internal padding
@@ -96,7 +98,7 @@ Games::Pandemic::Tk::Utils - Tk utilities for gui building
 
 =head1 VERSION
 
-version 0.6.0
+version 0.7.0
 
 =head1 DESCRIPTION
 
