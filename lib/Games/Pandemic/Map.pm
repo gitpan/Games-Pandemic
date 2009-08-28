@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Map;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: map information for Games::Pandemic
+# ABSTRACT: pandemic map information
 
 use File::Spec::Functions qw{ catdir catfile };
 use Moose;
@@ -185,11 +185,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Map - map information for Games::Pandemic
+Games::Pandemic::Map - pandemic map information
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 

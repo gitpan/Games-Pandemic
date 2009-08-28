@@ -27,6 +27,7 @@ lib/Games/Pandemic/Role/Researcher.pm
 lib/Games/Pandemic/Role/Scientist.pm
 lib/Games/Pandemic/Tk/Action.pm
 lib/Games/Pandemic/Tk/Dialog.pm
+lib/Games/Pandemic/Tk/Dialog/ChooseDisease.pm
 lib/Games/Pandemic/Tk/Dialog/DropCards.pm
 lib/Games/Pandemic/Tk/Dialog/GiveCard.pm
 lib/Games/Pandemic/Tk/Dialog/Simple.pm
@@ -65,6 +66,10 @@ lib/Games/Pandemic/share/maps/pandemic/cure-0-32.png
 lib/Games/Pandemic/share/maps/pandemic/cure-1-32.png
 lib/Games/Pandemic/share/maps/pandemic/cure-2-32.png
 lib/Games/Pandemic/share/maps/pandemic/cure-3-32.png
+lib/Games/Pandemic/share/maps/pandemic/golden-cure-0-32.png
+lib/Games/Pandemic/share/maps/pandemic/golden-cure-1-32.png
+lib/Games/Pandemic/share/maps/pandemic/golden-cure-2-32.png
+lib/Games/Pandemic/share/maps/pandemic/golden-cure-3-32.png
 lib/Games/Pandemic/share/research-station-32.png
 lib/Games/Pandemic/share/roles/dispatcher-icon-32.png
 lib/Games/Pandemic/share/roles/dispatcher-icon-orig.png

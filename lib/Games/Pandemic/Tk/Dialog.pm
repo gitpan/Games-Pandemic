@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: base class for Games::Pandemic dialog windows
+# ABSTRACT: base class for pandemic dialog windows
 
 use Moose;
 use MooseX::AttributeHelpers;
@@ -138,6 +138,8 @@ sub _build_gui {
             -command => sub { $self->_valid },
         )->pack(@LEFT, @XFILL2);
         $self->_set_w('ok', $but);
+        $top->bind('<Return>', sub { $self->_valid });
+        $top->bind('<Escape>', sub { $self->_valid }) unless $self->_cancel;
     }
     if ( $self->_cancel ) {
         my $but = $fbuttons->Button(
@@ -146,6 +148,8 @@ sub _build_gui {
             -command => sub { $self->_close },
         )->pack(@LEFT, @XFILL2);
         $self->_set_w('cancel', $but);
+        $top->bind('<Escape>', sub { $self->_close });
+        $top->bind('<Return>', sub { $self->_close }) unless $self->_ok;
     }
 
     # center window & make it appear
@@ -170,11 +174,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Tk::Dialog - base class for Games::Pandemic dialog windows
+Games::Pandemic::Tk::Dialog - base class for pandemic dialog windows
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 
@@ -204,8 +208,9 @@ It accepts the following attributes:
 =back 
 
 To subclass it, declare your own attributes, create the lazy builders
-for the attributes, and C<augment> the C<_build_gui()> method to create
-the bottom of the dialog window.
+for the attributes, C<augment> the C<_build_gui()> method to create the
+bottom of the dialog window, and implement the C<_valid()> method that
+would be called when ok button is pressed.
 
 =head1 AUTHOR
 

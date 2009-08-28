@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Controller;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
 # ABSTRACT: controller for a pandemic game
 
@@ -122,16 +122,19 @@ event new_game => sub {
     # 5 research stations available. FIXME: should it be part of the map?
     $game->set_stations( 5 );
 
+    # no outbreaks yet
+    $game->set_outbreaks( 0 );
+
     # create the player cards deck
     my @pcards = shuffle $map->cards;
     {
         # insert epidemic cards
-        my $nbinit = 12;   # FIXME: 3 players * 4 cards, should not be fixed
+        my $nbinit    = 8; # FIXME: 2 players * 4 cards, should not be fixed
         my $epidemics = 4; # FIXME: depends on game difficulty
         my $nbleft  = scalar(@pcards) - $nbinit;
-        my $perheap = int( $nbleft / $epidemics );
-        foreach my $i ( 0 .. $epidemics-1 ) {
-            my $offset = $i * $perheap + int( rand($perheap) );
+        my $perheap = $nbleft / $epidemics;
+        foreach my $i ( reverse 0 .. $epidemics-1 ) {
+            my $offset = int( $i * $perheap + rand($perheap) );
             splice @pcards, $offset, 0, Games::Pandemic::Card::Epidemic->new;
         }
     }
@@ -151,7 +154,7 @@ event new_game => sub {
     }
 
     # signal main window that we have started a new game
-    $K->post( 'main' => 'new_game' );
+    $K->post( main => 'new_game' );
 
     # create the players
     # FIXME: by now we're creating a fixed set of players, should be
@@ -252,8 +255,12 @@ event _action_treat => sub {
 
     $city->treat($disease, $nbtreat);
     $disease->return($nbtreat);
-
     $K->post( main => 'treatment', $city );
+
+    # check if disease is eradicated
+    $K->yield( '_eradicate', $disease )
+        if $disease->has_cure && $disease->nbleft == $disease->nbmax;
+
     $K->yield('_action_done');
 };
 
@@ -288,7 +295,9 @@ event _action_discover => sub {
     $disease->find_cure;
     $K->post( main => 'cure', $disease );
 
-    # FIXME: golden cure
+    # check if disease is eradicated
+    $K->yield( '_eradicate', $disease )
+        if $disease->has_cure && $disease->nbleft == $disease->nbmax;
 
     # check if game is won
     return $K->yield('_all_cures_discovered')
@@ -511,6 +520,7 @@ event _draw_cards => sub {
     my $curp = $game->curplayer;
     # FIXME: is 2 cards fixed or map-dependant?
     $K->yield( '_deal_card', $curp, 2 );
+    $game->clear_next_step;
 
     $game->set_state('end_of_cards');
     $K->post( main => 'end_of_cards' );
@@ -568,32 +578,58 @@ event _epidemic => sub {
 
 
 #
-# _infect( $city [, $nb [, $disease ] ] );
+# event: _eradicate($disease)
+#
+# $disease has been eradicated.
+#
+event _eradicate => sub {
+    my $disease = $_[ARG0];
+    $disease->eradicate;
+    $K->post( main => 'eradicate', $disease );
+};
+
+
+#
+# _infect( $city [, $nb [, $disease [, $seen ] ] ] );
 #
 # infect $city with $nb items of $disease. perform an outbreak on
 # neighbour cities if needed. $nb defaults to 1, $disease defaults to
-# the city default disease.
+# the city default disease. if there's an outbreak, keep a list of
+# cities already C<$seen> (a hash reference).
 #
 event _infect => sub {
-    my ($city, $nb, $disease) = @_[ARG0..$#_];
+    my ($city, $nb, $disease, $seen) = @_[ARG0..$#_];
     $nb      //= 1;
     $disease //= $city->disease;
+    $seen    //= {}; # FIXME: padre//
+
+    # disease eradicated: no infection! \o/
+    return if $disease->is_eradicated;
+
+    # perform the infection & update the gui
+    my ($outbreak, $nbreal) = $city->infect($nb, $disease);
 
     # update the disease
-    $disease->take($nb);
+    $disease->take($nbreal);
     if ( $disease->nbleft <= 0 ) {
         $K->yield('_no_more_cubes', $disease);
         return;
     }
 
-    # perform the infection & update the gui
-    my $outbreak = $city->infect($nb, $disease);
-    # FIXME: update outbreak
-    # FIXME: gameover if too many outbreaks
     $K->post( main => 'infection', $city, $outbreak );
+    return unless $outbreak && !$seen->{$city};
 
-    return unless $outbreak;
-    # FIXME: outbreak!
+    # update number of outbreaks
+    my $game = Games::Pandemic->instance;
+    $game->inc_outbreaks;
+    if ( $game->nb_outbreaks == 8 ) { # FIXME: map dependant?
+        $K->yield('_too_many_outbreaks');
+        return;
+    }
+
+    # chaining infections
+    $seen->{$city}++;
+    $K->yield( '_infect', $_, 1, $disease, $seen ) for $city->neighbours;
 };
 
 
@@ -688,7 +724,18 @@ event _propagate => sub {
 
     # update game state
     $game->set_state('end_of_propagation');
-    $K->post( 'end_of_propagation' );
+    $K->post( main => 'end_of_propagation' );
+};
+
+
+#
+# event: _too_many_outbreaks()
+#
+# sent when there are too many outbreaks, and game is over.
+#
+event _too_many_outbreaks => sub {
+    $K->post( main => 'too_many_outbreaks' );
+    $K->yield('_game_over');
 };
 
 
@@ -707,7 +754,7 @@ Games::Pandemic::Controller - controller for a pandemic game
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 

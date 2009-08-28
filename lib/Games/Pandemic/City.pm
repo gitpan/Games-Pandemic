@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::City;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: city object for Games::Pandemic
+# ABSTRACT: pandemic city object
 
 use Moose;
 use MooseX::AttributeHelpers;
@@ -127,7 +127,7 @@ sub infect {
 
     # store new infection state & return outbreak status
     $self->_set_infection( $id, $new );
-    return $outbreak;
+    return $outbreak, $new-$old;
 }
 
 
@@ -159,11 +159,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::City - city object for Games::Pandemic
+Games::Pandemic::City - pandemic city object
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 
@@ -216,10 +216,12 @@ neighbours of C<$city>.
 
 
 
-=head2 my $outbreak = $city->infect( [ $nb [, $disease] ] )
+=head2 my ($outbreak, $nbreal) = $city->infect( [ $nb [, $disease] ] )
 
 Infect C<$city> with C<$nb> items of C<$disease>. Return true if an
-outbreak happened following this infection, false otherwise.
+outbreak happened following this infection, false otherwise. If an
+outbreak happened, return also the real number of items used (since a
+city can only hold up to a maximum number of disease items).
 
 C<$nb> defaults to 1, and C<$disease> to the city disease.
 

@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Utils;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: various utilities for Games::Pandemic
+# ABSTRACT: various utilities for pandemic
 
 use Devel::CheckOS        qw{ os_is };
 use Encode;
@@ -83,11 +83,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Utils - various utilities for Games::Pandemic
+Games::Pandemic::Utils - various utilities for pandemic
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =head1 DESCRIPTION
 

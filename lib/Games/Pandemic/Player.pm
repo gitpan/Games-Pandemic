@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Player;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
 # ABSTRACT: pandemic game player
 
@@ -199,7 +199,7 @@ sub is_discover_possible {
         my $disease = $card->city->disease;
         my $name = $disease->name;
         $seen{$name}++;
-        return $disease if $seen{$name} == $self->cards_needed;
+        return $disease if $seen{$name} == $self->cards_needed && ! $disease->has_cure;
     }
 
     return 0;
@@ -281,7 +281,7 @@ Games::Pandemic::Player - pandemic game player
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 

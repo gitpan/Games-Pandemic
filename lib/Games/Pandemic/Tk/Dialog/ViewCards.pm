@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::ViewCards;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
 # ABSTRACT: dialog window to show cards
 
@@ -20,6 +20,7 @@ use List::Util qw{ max };
 use Moose;
 use MooseX::SemiAffordanceAccessor;
 use Tk;
+use Tk::Tiler;
 
 extends 'Games::Pandemic::Tk::Dialog';
 
@@ -56,25 +57,24 @@ augment _build_gui => sub {
     my $top   = $self->_toplevel;
     my @cards = $self->cards;
 
-    # compute a minimum length, for a nice outlook on the eye. we do
-    # that by multiplying by the magic number 4, making the window
-    # neither too narrow nor too big. ymmv, but i like it this way! :-)
-    my $max   = max map { length $_->label } @cards;
-    my $width = $max * 4;
-
     # main elements
-    $top->Label(-text=>'(more recent)', -width=>$width)->pack(@TOP, @FILLX, @PAD2);
-    my $f = $top->Scrolled('Frame', -scrollbars=>'oe')->pack(@TOP, @XFILL2, @PAD2);
-    $top->Label(-text=>'(older)')->pack(@TOP, @FILLX, @PAD2);
+    my $tiler = $top->Scrolled( 'Tiler',
+        -scrollbars => 'oe',
+        -rows       => 8,
+        -columns    => 3,
+    )->pack(@TOP, @XFILL2, @PAD2);
+    #$tiler->Manage( $tiler->Label(-text=>T('(older)'), -anchor=>'w') );
 
     # display cards
     foreach my $card ( reverse @cards ) {
         # to display a checkbutton with image + text, we need to
         # create a checkbutton with a label just next to it.
-        my $fcard = $f->Frame->pack(@TOP, @FILLX);
+        my $fcard = $tiler->Frame;
         $fcard->Label( -image => image($card->icon, $top) )->pack(@LEFT);
         $fcard->Label( -text  => $card->label, -anchor => 'w' )->pack(@LEFT, @FILLX);
+        $tiler->Manage($fcard);
     }
+    #$tiler->Manage( $tiler->Label(-text=>T('(more recent)')) );
 };
 
 
@@ -94,7 +94,7 @@ Games::Pandemic::Tk::Dialog::ViewCards - dialog window to show cards
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 

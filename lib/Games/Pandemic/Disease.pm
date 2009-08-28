@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Disease;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: disease object for Games::Pandemic
+# ABSTRACT: pandemic disease object
 
 use File::Spec::Functions qw{ catfile };
 use Moose;
@@ -59,6 +59,15 @@ has has_cure => (
     }
 );
 
+has is_eradicated => (
+    metaclass => 'Bool',
+    is        => 'ro',
+    isa       => 'Bool',
+    default   => 0,
+    provides  => {
+        set     => 'eradicate',
+    }
+);
 
 # -- default builders / finishers
 
@@ -90,11 +99,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Disease - disease object for Games::Pandemic
+Games::Pandemic::Disease - pandemic disease object
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 

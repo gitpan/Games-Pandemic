@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Map::Pandemic;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
 # ABSTRACT: standard pandemic map from real game
 
@@ -134,7 +134,7 @@ Games::Pandemic::Map::Pandemic - standard pandemic map from real game
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =head1 AUTHOR
 

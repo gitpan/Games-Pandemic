@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Card::City;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
 # ABSTRACT: pandemic city card
 
@@ -58,7 +58,7 @@ Games::Pandemic::Card::City - pandemic city card
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =head1 AUTHOR
 

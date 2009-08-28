@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Action;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: action item for main Games::Pandemic window
+# ABSTRACT: action item for main pandemic window
 
 use Moose;
 use MooseX::AttributeHelpers;
@@ -118,11 +118,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Tk::Action - action item for main Games::Pandemic window
+Games::Pandemic::Tk::Action - action item for main pandemic window
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =head1 SYNOPSIS
 

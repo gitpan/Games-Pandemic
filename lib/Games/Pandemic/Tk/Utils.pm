@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Utils;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
 # ABSTRACT: Tk utilities for gui building
 
@@ -98,7 +98,7 @@ Games::Pandemic::Tk::Utils - Tk utilities for gui building
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =head1 DESCRIPTION
 

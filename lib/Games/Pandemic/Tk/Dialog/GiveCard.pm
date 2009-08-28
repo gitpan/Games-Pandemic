@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::GiveCard;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: sharing dialog window for Games::Pandemic
+# ABSTRACT: pandemic dialog to give cards
 
 use Moose;
 use MooseX::SemiAffordanceAccessor;
@@ -162,17 +162,35 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Tk::Dialog::GiveCard - sharing dialog window for Games::Pandemic
+Games::Pandemic::Tk::Dialog::GiveCard - pandemic dialog to give cards
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 
 BUILD
 
 =end Pod::Coverage
+
+=head1 SYNOPSIS
+
+    Games::Pandemic::Tk::Dialog::GiveCard->new(
+        parent  => $mw,
+        cards   => \@cards,
+        players => \@players,
+    );
+
+=head1 DESCRIPTION
+
+The game allows player to give cards to each other, provided that the
+players are in the same city.
+
+This dialog will show the C<@cards> of current player, with the list of
+C<@players> currently in the city. When clicking ok, the selected card
+will be given to the selected player. This takes one action, and is
+handled by L<Games::Pandemic::Controller>.
 
 =head1 AUTHOR
 

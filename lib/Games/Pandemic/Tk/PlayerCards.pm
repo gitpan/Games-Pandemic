@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::PlayerCards;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: window holding player cards for Games::Pandemic
+# ABSTRACT: pandemic dialog to show player cards
 
 use List::Util qw{ max };
 use Moose;
@@ -192,11 +192,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Tk::PlayerCards - window holding player cards for Games::Pandemic
+Games::Pandemic::Tk::PlayerCards - pandemic dialog to show player cards
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 
@@ -204,6 +204,16 @@ START
 STOP
 
 =end Pod::Coverage
+
+=head1 SYNOPSIS
+
+    Games::Pandemic::Tk::PlayerCards->new( parent=>$mw );
+
+=head1 DESCRIPTION
+
+This module implements a POE session (aliased C<cards>), responsible to
+show the cards hold by the various players. It will receive some events
+from the main window when the players gain or loose some cards.
 
 =head1 METHODS
 

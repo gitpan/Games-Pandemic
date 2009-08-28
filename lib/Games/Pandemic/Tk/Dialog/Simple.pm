@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::Simple;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: generic dialog window for Games::Pandemic
+# ABSTRACT: generic pandemic dialog
 
 use Moose;
 use MooseX::SemiAffordanceAccessor;
@@ -72,17 +72,35 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Tk::Dialog::Simple - generic dialog window for Games::Pandemic
+Games::Pandemic::Tk::Dialog::Simple - generic pandemic dialog
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 
 BUILD
 
 =end Pod::Coverage
+
+=head1 SYNOPSIS
+
+    Games::Pandemic::Tk::Dialog::Simple->new(
+        parent => $mw,
+        title  => $title,
+        header => $header,
+        icon   => $image,
+        text   => $texte,
+    );
+
+=head1 DESCRIPTION
+
+This module implements a very simple dialog window, to display various
+information on the current game state. It only has a close button, since
+it does not implement any action.
+
+The only mandatory paramater (beside C<parent> of course) is C<text>.
 
 =head1 AUTHOR
 

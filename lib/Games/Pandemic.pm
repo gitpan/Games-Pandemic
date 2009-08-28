@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
 # ABSTRACT: cooperative pandemic board game
 
@@ -120,6 +120,25 @@ has stations => (
     },
 );
 
+has nb_outbreaks => (
+    metaclass => 'Counter',
+    is        => 'ro',
+    isa       => 'Int',
+    provides  => {
+        inc => '_inc_outbreaks',
+        set => 'set_outbreaks',
+    },
+);
+
+
+
+sub inc_outbreaks {
+    my $self = shift;
+    return if $self->nb_outbreaks == 8; # FIXME: game dependant?
+    $self->_inc_outbreaks;
+}
+
+
 # holds the player having too many cards - if any
 has too_many_cards => (
     is       => 'rw',
@@ -130,7 +149,7 @@ has too_many_cards => (
 );
 
 
-has next_step => ( is=>'rw', isa=>'Str' );
+has next_step => ( is=>'rw', isa=>'Str', clearer=>'clear_next_step' );
 
 
 # -- public methods
@@ -165,7 +184,7 @@ Games::Pandemic - cooperative pandemic board game
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =head1 SYNOPSIS
 
@@ -185,6 +204,12 @@ friends, you'll have an exciting time - much more than with this poor
 electronic copy.
 
 =head1 METHODS
+
+=head2 $game->inc_outbreaks;
+
+Increment number of outbreaks, up to a maximum of 8.
+
+
 
 =head2 Games::Pandemic->run;
 

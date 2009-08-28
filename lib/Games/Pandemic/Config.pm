@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Config;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: local configuration for Games::Pandemic
+# ABSTRACT: pandemic local configuration
 
 use Games::Pandemic::Utils;
 use MooseX::Singleton;          # should come before any other moose
@@ -70,11 +70,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Config - local configuration for Games::Pandemic
+Games::Pandemic::Config - pandemic local configuration
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =head1 SYNOPSIS
 

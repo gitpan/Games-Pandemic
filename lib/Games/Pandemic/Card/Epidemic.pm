@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Card::Epidemic;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
 # ABSTRACT: epidemic card for pandemic
 
@@ -44,12 +44,13 @@ Games::Pandemic::Card::Epidemic - epidemic card for pandemic
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =head1 DESCRIPTION
 
 This package implements a simple epidemic card, not meant to be
-displayed at all.
+displayed at all. It is here only to mark an epidemic event, drawn among
+other cards.
 
 =head1 AUTHOR
 

@@ -12,18 +12,21 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Main;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: main window for Games::Pandemic
+# ABSTRACT: main pandemic window
 
+use Convert::Color;
 use File::Spec::Functions qw{ catfile };
 use Image::Size;
 use List::Util            qw{ min };
+use Math::Gradient        qw{ array_gradient };
 use Moose;
 use MooseX::POE;
 use MooseX::SemiAffordanceAccessor;
 use Readonly;
 use Tk;
+use Tk::Balloon;
 use Tk::Font;
 use Tk::JPEG;
 use Tk::Pane;
@@ -32,6 +35,7 @@ use Tk::ToolBar;
 
 use Games::Pandemic::Config;
 use Games::Pandemic::Tk::Action;
+use Games::Pandemic::Tk::Dialog::ChooseDisease;
 use Games::Pandemic::Tk::Dialog::DropCards;
 use Games::Pandemic::Tk::Dialog::GiveCard;
 use Games::Pandemic::Tk::Dialog::Simple;
@@ -47,7 +51,7 @@ Readonly my $TIME_BLINK => 0.5;
 Readonly my $TIME_DECAY => 0.150;
 
 
-# -- accessors
+# -- attributes
 
 # a hash with all the widgets, for easier reference.
 has _widgets => (
@@ -74,7 +78,18 @@ has _actions => (
     },
 );
 
-
+# color gradient for outbreak scale
+has _outbreak_gradient => (
+    metaclass  => 'Collection::Array',
+    is         => 'ro',
+    isa        => 'ArrayRef[ArrayRef]',
+    auto_deref => 1,
+    lazy_build => 1,
+    provides   => {
+        get  => '_outbreak_color',            # my $c = $main->_outbreak_color($i);
+        push => '_add_to_outbreak_gradient',  # my $c = $main->_add_to_outbreak_gradient($rgb);
+    }
+);
 
 # currently selected player
 has _selplayer => ( is => 'rw', weak_ref => 1, isa => 'Games::Pandemic::Player' );
@@ -100,6 +115,18 @@ sub START {
     $self->_set_session($session);
     $self->_build_gui;
 }
+
+
+sub _build__outbreak_gradient {
+    my $self = shift;
+    my $scale = $self->_w('outbreaks');
+
+    my $color = substr( ($scale->configure(-troughcolor))[3], 1);
+    my $c = Convert::Color->new("rgb8:$color");
+    my @gradient = array_gradient([ map {$_*255} $c->rgb ], [255,0,0], 9);
+    return \@gradient;
+}
+
 
 
 # -- public events
@@ -137,6 +164,10 @@ event build_station => sub {
 
 event cure => sub {
     my ($self, $disease) = @_[OBJECT, ARG0];
+    $self->_w('tooltip')->attach(
+        $self->_w("lab_cure_$disease"),
+        -msg=> sprintf( T("cure found\nfor %s"), $disease->name ),
+    );
     $self->_update_status;
 };
 
@@ -182,6 +213,19 @@ event epidemic => sub {
         header => T('New epidemic'),
         icon   => catfile($SHAREDIR, 'icons', 'warning-48.png'),
         text   => sprintf($format, $city->disease->name, $city->name)
+    );
+};
+
+
+
+event eradicate => sub {
+    my ($self, $disease) = @_[OBJECT, ARG0];
+    my $label = $self->_w("lab_cure_$disease");
+    $label->configure(
+        -image => image( $disease->image('golden-cure', 32) ) );
+    $self->_w('tooltip')->attach(
+        $label,
+        -msg => sprintf( T("%s:\ndisease eradicated"), $disease->name ),
     );
 };
 
@@ -395,6 +439,17 @@ event too_many_cards => sub {
 };
 
 
+event too_many_outbreaks => sub {
+    my $self = shift;
+
+    # warn user
+    my $header = T('Too many outbreaks');
+    my $reason = T('there were too many outbreaks, pandemics have spread out of control.');
+
+    $self->_game_lost($header, $reason);
+};
+
+
 
 event treatment => sub {
     my ($self, $city) = @_[OBJECT, ARG0];
@@ -558,7 +613,10 @@ event _action_treat => sub {
     if ( scalar @diseases == 1 ) {
         $K->post( controller => 'action', 'treat', $diseases[0] );
     } else {
-        # FIXME: ask user which disease to treat
+        Games::Pandemic::Tk::Dialog::ChooseDisease->new(
+            parent   => $mw,
+            diseases => \@diseases,
+        );
     }
 };
 
@@ -656,7 +714,7 @@ event _continue => sub {
 event _new => sub {
     my $game = Games::Pandemic->instance;
     return if $game->is_in_play;
-    $K->post('controller' => 'new_game');
+    $K->post( controller => 'new_game' );
 };
 
 
@@ -871,6 +929,9 @@ sub _build_gui {
     $self->_action($_)->enable  for @enabled;
     $self->_action($_)->disable for @disabled;
 
+    # the tooltip
+    $self->_set_w('tooltip', $mw->Balloon);
+
     # WARNING: we need to create the toolbar object before anything
     # else. indeed, tk::toolbar loads the embedded icons in classinit,
     # that is when the first object of the class is created - and not
@@ -989,6 +1050,8 @@ sub _build_status_bar {
     my $game = Games::Pandemic->instance;
     my $map  = $game->map;
     my $s    = $self->_session;
+    my $tip  = $self->_w('tooltip');
+    my $tipmsg;
 
     # the status bar itself is a frame
     my $sb = $mw->Frame->pack(@RIGHT, @FILLX, -before=>$self->_w('canvas'));
@@ -996,25 +1059,36 @@ sub _build_status_bar {
 
     # research stations
     my $fstations = $sb->Frame->pack(@TOP, @PADX10);
-    $fstations->Label(
+    my $img_nbstations = $fstations->Label(
         -image => image( catfile( $SHAREDIR, 'research-station-32.png' ) ),
     )->pack(@TOP);
     my $lab_nbstations = $fstations->Label->pack(@TOP);
     $self->_set_w('lab_nbstations', $lab_nbstations );
+    $tipmsg = T("number of remaining\nresearch stations");
+    $tip->attach($img_nbstations, -msg=>$tipmsg);
+    $tip->attach($lab_nbstations, -msg=>$tipmsg);
 
     # diseases information
     my $fdiseases = $sb->Frame->pack(@TOP, @PADX10);
     my $fcures    = $sb->Frame->pack(@TOP, @PADX10);
     foreach my $disease ( $map->all_diseases ) {
-        $fdiseases->Label(
+        # disease
+        my $img_disease = $fdiseases->Label(
             -image => image( $disease->image('cube', 32) ),
         )->pack(@TOP);
         my $lab_disease = $fdiseases->Label->pack(@TOP);
+        $self->_set_w("lab_disease_$disease", $lab_disease);
+        $tipmsg = sprintf T("number of cubes\nof %s left"), $disease->name;
+        $tip->attach($img_disease, -msg=>$tipmsg);
+        $tip->attach($lab_disease, -msg=>$tipmsg);
+
+        # cure
         my $lab_cure = $fcures->Label(
             -image => image( $disease->image('cure', 32) ),
         )->pack(@TOP);
-        $self->_set_w("lab_disease_$disease", $lab_disease);
         $self->_set_w("lab_cure_$disease", $lab_cure);
+        $tipmsg = sprintf T("cure for %s\nnot found"), $disease->name;
+        $tip->attach($lab_cure, -msg=>$tipmsg);
     }
 
     # player cards information
@@ -1027,6 +1101,9 @@ sub _build_status_bar {
     $self->_set_w('lab_cards', $lab_cards);
     $img_cards->bind('<Button-1>', $s->postback('_show_past_cards'));
     $lab_cards->bind('<Button-1>', $s->postback('_show_past_cards'));
+    $tipmsg = T("number of cards remaining-discarded\nclick to see history");
+    $tip->attach($img_cards, -msg=>$tipmsg);
+    $tip->attach($lab_cards, -msg=>$tipmsg);
 
     # infection information
     my $infection = $game->infection;
@@ -1038,6 +1115,21 @@ sub _build_status_bar {
     $self->_set_w('lab_infection', $lab_infection);
     $img_infection->bind('<Button-1>', $s->postback('_show_past_infections'));
     $lab_infection->bind('<Button-1>', $s->postback('_show_past_infections'));
+    $tipmsg = T("number of infections remaining-passed\nclick to see history");
+    $tip->attach($img_infection, -msg=>$tipmsg);
+    $tip->attach($lab_infection, -msg=>$tipmsg);
+
+    # oubreak information
+    my $scale = $sb->Scale(
+        -orient => 'vertical',
+        -sliderlength => 20,
+        -from   => 8,
+        -to     => 0,
+        @ENOFF,
+    )->pack(@TOP, @PADX10);
+    $self->_set_w('outbreaks', $scale);
+    $tipmsg = sprintf T("number of outbreaks\n(maximum %s)"), 8; # FIXME: map dependant?
+    $tip->attach($scale, -msg=>$tipmsg);
 }
 
 
@@ -1347,6 +1439,17 @@ sub _update_status {
     $self->_w('lab_cards')->configure( -text => $text1 );
     $self->_w('lab_infection')->configure(-text => $text2 );
 
+    # number of outbreaks
+    my $outbreaks = $game->nb_outbreaks;
+    my $scale = $self->_w('outbreaks');
+    $scale->configure(@ENON); # ->set() doesn't work if disabled
+    $scale->set( $outbreaks );
+    my $color = Convert::Color::RGB8->new( @{ $self->_outbreak_color($outbreaks) } );
+    $scale->configure(
+        -troughcolor => '#' . $color->hex,
+        @ENOFF
+    );
+
     # actions left
     $self->_w('lab_nbactions')->configure(-text=>$curp->actions_left);
 }
@@ -1363,11 +1466,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Tk::Main - main window for Games::Pandemic
+Games::Pandemic::Tk::Main - main pandemic window
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 
@@ -1463,6 +1566,12 @@ Received when a new epidemic strikes C<$city>.
 
 
 
+=head2 event: eradicate($disease)
+
+Received when $disease has been eradicated.
+
+
+
 =head2 event: gain_card($player, $card)
 
 Received when C<$player> got a new C<$card>.
@@ -1529,6 +1638,12 @@ Received when C<$player> has moved between C<$from> and C<$to> cities.
 
 Received when C<$player> has too many cards: she must drop some before
 the game can continue.
+
+
+
+=head2 event: too_many_outbreaks()
+
+Received when there are too many outbreaks, and game is over.
 
 
 

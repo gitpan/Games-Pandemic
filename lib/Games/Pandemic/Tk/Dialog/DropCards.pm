@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::DropCards;
-our $VERSION = '0.7.0';
+our $VERSION = '0.8.0';
 
-# ABSTRACT: dropping cards dialog window for Games::Pandemic
+# ABSTRACT: pandemic dialog to drop cards
 
 use Moose;
 use MooseX::SemiAffordanceAccessor;
@@ -153,17 +153,34 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Games::Pandemic::Tk::Dialog::DropCards - dropping cards dialog window for Games::Pandemic
+Games::Pandemic::Tk::Dialog::DropCards - pandemic dialog to drop cards
 
 =head1 VERSION
 
-version 0.7.0
+version 0.8.0
 
 =begin Pod::Coverage
 
 BUILD
 
 =end Pod::Coverage
+
+=head1 SYNOPSIS
+
+    Games::Pandemic::Tk::Dialog::DropCards->new(
+        parent => $mw,
+        player => $player,
+    );
+
+=head1 DESCRIPTION
+
+Sometimes, a player has too many cards in her hands. In this case, she
+must drop cards to get back to the official limit.
+
+This dialog will show current cards of C<$player> and ask which ones
+should be discarded. When clicking ok, the selected card(s) will be
+dropped. This takes no action, and is handled by
+L<Games::Pandemic::Controller>.
 
 =head1 AUTHOR
 
