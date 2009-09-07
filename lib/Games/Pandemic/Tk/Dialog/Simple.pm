@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::Simple;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: generic pandemic dialog
 
@@ -76,7 +76,7 @@ Games::Pandemic::Tk::Dialog::Simple - generic pandemic dialog
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =begin Pod::Coverage
 
@@ -88,10 +88,10 @@ BUILD
 
     Games::Pandemic::Tk::Dialog::Simple->new(
         parent => $mw,
-        title  => $title,
-        header => $header,
-        icon   => $image,
-        text   => $texte,
+        title  => $title,       # optional
+        header => $header,      # optional
+        icon   => $image,       # optional
+        text   => $text,
     );
 
 =head1 DESCRIPTION
@@ -112,7 +112,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Main;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: main pandemic window
 
@@ -35,9 +35,14 @@ use Tk::ToolBar;
 
 use Games::Pandemic::Config;
 use Games::Pandemic::Tk::Action;
+use Games::Pandemic::Tk::Dialog::Action;
+use Games::Pandemic::Tk::Dialog::Airlift;
 use Games::Pandemic::Tk::Dialog::ChooseDisease;
 use Games::Pandemic::Tk::Dialog::DropCards;
+use Games::Pandemic::Tk::Dialog::Forecast;
 use Games::Pandemic::Tk::Dialog::GiveCard;
+use Games::Pandemic::Tk::Dialog::GovernmentGrant;
+use Games::Pandemic::Tk::Dialog::ResilientPopulation;
 use Games::Pandemic::Tk::Dialog::Simple;
 use Games::Pandemic::Tk::Dialog::ViewCards;
 use Games::Pandemic::Tk::PlayerCards;
@@ -49,7 +54,7 @@ Readonly my $mw => $poe_main_window; # already created by poe
 Readonly my $RADIUS     => 10;
 Readonly my $TIME_BLINK => 0.5;
 Readonly my $TIME_DECAY => 0.150;
-
+Readonly my $TIME_GLOW  => 0.150;
 
 # -- attributes
 
@@ -91,6 +96,20 @@ has _outbreak_gradient => (
     }
 );
 
+# color gradient for infection rate
+has _infection_rate_gradient => (
+    metaclass  => 'Collection::Array',
+    is         => 'ro',
+    isa        => 'ArrayRef[Str]',
+    auto_deref => 1,
+    lazy_build => 1,
+    provides   => {
+        shift => '_next_infection_rate_color',
+        push  => '_add_infection_rate_color',
+    }
+);
+
+
 # currently selected player
 has _selplayer => ( is => 'rw', weak_ref => 1, isa => 'Games::Pandemic::Player' );
 
@@ -117,6 +136,14 @@ sub START {
 }
 
 
+sub _build__infection_rate_gradient {
+    my @gradient =
+        map { sprintf "#%02x%02x%02x", @$_ }
+        array_gradient([15,71,15], [212,219,16], 50);
+    push @gradient, reverse @gradient;
+    return \@gradient;
+}
+
 sub _build__outbreak_gradient {
     my $self = shift;
     my $scale = $self->_w('outbreaks');
@@ -135,6 +162,17 @@ sub _build__outbreak_gradient {
 event action_done => sub {
     my $self = $_[OBJECT];
     $self->_update_status;
+};
+
+
+
+event airlift => sub {
+    my ($self, $player, $card) = @_[OBJECT, ARG0..$#_];
+    Games::Pandemic::Tk::Dialog::Airlift->new(
+        parent => $mw,
+        player => $player,
+        card   => $card,
+    );
 };
 
 
@@ -231,6 +269,17 @@ event eradicate => sub {
 
 
 
+event forecast => sub {
+    my ($self, $player, $card) = @_[OBJECT, ARG0..$#_];
+    Games::Pandemic::Tk::Dialog::Forecast->new(
+        parent => $mw,
+        player => $player,
+        card   => $card,
+    );
+};
+
+
+
 event gain_card => sub {
     my ($self, $player, $card) = @_[OBJECT, ARG0..$#_];
     $K->post( cards => 'gain_card', $player, $card );
@@ -244,6 +293,17 @@ event game_over => sub {
     $self->_update_status;
     $self->_action($_)->disable for ( "continue",
         map { "action_$_" } qw{ build discover treat share pass drop } );
+};
+
+
+
+event government_grant => sub {
+    my ($self, $player, $card) = @_[OBJECT, ARG0..$#_];
+    Games::Pandemic::Tk::Dialog::GovernmentGrant->new(
+        parent => $mw,
+        player => $player,
+        card   => $card,
+    );
 };
 
 
@@ -406,6 +466,25 @@ event no_more_cubes => sub {
 
 
 
+event one_quiet_night => sub {
+    my ($self, $player, $card) = @_[OBJECT, ARG0..$#_];
+
+    my $text = $card->description . "\n\n" .
+        T('Do you want to play this card?');
+
+    Games::Pandemic::Tk::Dialog::Action->new(
+        parent    => $mw,
+        title     => T('Special event'),
+        header    => $card->label,
+        icon      => catfile($SHAREDIR, 'cards', 'one-quiet-night-48.png'),
+        text      => $text,
+        action    => T('Play'),
+        post_args => [ controller=>'one_quiet_night', $player, $card ],
+    );
+};
+
+
+
 event player_move => sub {
     my ($self, $player, $from, $to) = @_[OBJECT, ARG0..$#_];
 
@@ -413,6 +492,20 @@ event player_move => sub {
     my $dx = $to->coordx - $from->coordx;
     my $dy = $to->coordy - $from->coordy;
     $self->_w('canvas')->move( $player, $dx, $dy );
+
+    # need to update actions if moved with airlift
+    $self->_update_actions;
+};
+
+
+
+event resilient_population => sub {
+    my ($self, $player, $card) = @_[OBJECT, ARG0..$#_];
+    Games::Pandemic::Tk::Dialog::ResilientPopulation->new(
+        parent => $mw,
+        player => $player,
+        card   => $card,
+    );
 };
 
 
@@ -497,6 +590,15 @@ event _decay => sub {
 };
 
 
+event _glow => sub {
+    my $self = shift;
+    my $game = Games::Pandemic->instance;
+    my $color = $self->_next_infection_rate_color;
+    $self->_w('lab_infection_rate')->configure(-bg=>$color);
+    $K->delay( _glow => $TIME_GLOW / ($game->nb_epidemics+1) );
+    $self->_add_infection_rate_color($color);
+};
+
 # -- gui events
 
 #
@@ -575,7 +677,7 @@ event _action_share => sub {
 
     # get list of cards to be shared
     my @cards = $curp->can_share_anywhere
-        ? $curp->all_cards
+        ? grep { $_->isa('Games::Pandemic::Card::City') } $curp->all_cards
         : $curp->owns_city_card($city);
 
     if ( @players == 1 && @cards == 1 ) {
@@ -669,6 +771,9 @@ event _city_click => sub {
 event _close => sub {
     my $self = shift;
     my $game = Games::Pandemic->instance;
+
+    # remove current timers
+    $K->alarm_remove_all;
 
     # allow some actions
     $self->_action('new')->enable;
@@ -1057,16 +1162,16 @@ sub _build_status_bar {
     my $sb = $mw->Frame->pack(@RIGHT, @FILLX, -before=>$self->_w('canvas'));
     $self->_set_w( infobar => $sb );
 
-    # research stations
-    my $fstations = $sb->Frame->pack(@TOP, @PADX10);
-    my $img_nbstations = $fstations->Label(
-        -image => image( catfile( $SHAREDIR, 'research-station-32.png' ) ),
-    )->pack(@TOP);
-    my $lab_nbstations = $fstations->Label->pack(@TOP);
-    $self->_set_w('lab_nbstations', $lab_nbstations );
-    $tipmsg = T("number of remaining\nresearch stations");
-    $tip->attach($img_nbstations, -msg=>$tipmsg);
-    $tip->attach($lab_nbstations, -msg=>$tipmsg);
+#    # research stations
+#    my $fstations = $sb->Frame->pack(@TOP, @PADX10);
+#    my $img_nbstations = $fstations->Label(
+#        -image => image( catfile( $SHAREDIR, 'research-station-32.png' ) ),
+#    )->pack(@TOP);
+#    my $lab_nbstations = $fstations->Label->pack(@TOP);
+#    $self->_set_w('lab_nbstations', $lab_nbstations );
+#    $tipmsg = T("number of remaining\nresearch stations");
+#    $tip->attach($img_nbstations, -msg=>$tipmsg);
+#    $tip->attach($lab_nbstations, -msg=>$tipmsg);
 
     # diseases information
     my $fdiseases = $sb->Frame->pack(@TOP, @PADX10);
@@ -1118,6 +1223,14 @@ sub _build_status_bar {
     $tipmsg = T("number of infections remaining-passed\nclick to see history");
     $tip->attach($img_infection, -msg=>$tipmsg);
     $tip->attach($lab_infection, -msg=>$tipmsg);
+
+    # infection rate
+    my $firate = $sb->Frame(-bg=>'black')->pack(@TOP, @PADX10, @FILLX);
+    my $lab_irate = $firate->Label->pack(@TOP, @XFILL2);
+    $self->_set_w('lab_infection_rate', $lab_irate);
+    $K->delay( _glow => $TIME_GLOW );
+    $tipmsg = T("infection rate\n(number of epidemics)");
+    $tip->attach($lab_irate, -msg=>$tipmsg);
 
     # oubreak information
     my $scale = $sb->Scale(
@@ -1421,8 +1534,8 @@ sub _update_status {
     my $curp = $game->curplayer;
     my $map  = $game->map;
 
-    # research stations
-    $self->_w('lab_nbstations')->configure(-text => $game->stations);
+#    # research stations
+#    $self->_w('lab_nbstations')->configure(-text => $game->stations);
 
     # diseases information
     foreach my $disease ( $map->all_diseases ) {
@@ -1438,6 +1551,11 @@ sub _update_status {
     my $text2 = $deck2->nbcards . '-' . $deck2->nbdiscards;
     $self->_w('lab_cards')->configure( -text => $text1 );
     $self->_w('lab_infection')->configure(-text => $text2 );
+
+    # infection rate
+    my $lab_irate = $self->_w('lab_infection_rate');
+    my $text = sprintf "%d (%d)", $game->infection_rate, $game->nb_epidemics;
+    $lab_irate->configure(-text =>$text);
 
     # number of outbreaks
     my $outbreaks = $game->nb_outbreaks;
@@ -1470,7 +1588,7 @@ Games::Pandemic::Tk::Main - main pandemic window
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =begin Pod::Coverage
 
@@ -1508,6 +1626,18 @@ license for non commercial use
 
 =item * success icon by Gnome artists, under a gpl license
 
+=item * quiet night icon by David Vignoni, under a lgpl license
+
+=item * government grant icon by Webdesigner Depot, under a free
+license for commercial use
+
+=item * resilient population icon by Gnome Project, under a GPL license
+
+=item * airlift icon by IconsLand, under a free license for non-
+commercial use
+
+=item * airlift icon by David Vignoni, under a LGPL license
+
 =back 
 
 =head1 METHODS
@@ -1515,6 +1645,13 @@ license for non commercial use
 =head2 event: action_done()
 
 Received when current player has finished an action.
+
+
+
+=head2 event: airlift( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::Airlift>. Does not require an action.
 
 
 
@@ -1572,6 +1709,13 @@ Received when $disease has been eradicated.
 
 
 
+=head2 event: forecast( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::Forecast>. Does not require an action.
+
+
+
 =head2 event: gain_card($player, $card)
 
 Received when C<$player> got a new C<$card>.
@@ -1581,6 +1725,14 @@ Received when C<$player> got a new C<$card>.
 =head2 event: game_over()
 
 Received when game is over: user cannot advance the game any more.
+
+
+
+=head2 event: government_grant( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::GovernmentGrant>. Does not require
+an action.
 
 
 
@@ -1628,9 +1780,25 @@ Received when game is over due to a lack of cards to deal.
 
 
 
+=head2 event: one_quiet_night( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::OneQuietNight>. Does not require
+an action.
+
+
+
 =head2 event: player_move( $player, $from ,$to )
 
 Received when C<$player> has moved between C<$from> and C<$to> cities.
+
+
+
+=head2 event: resilient_population( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::ResilientPopulation>. Does not require
+an action.
 
 
 
@@ -1663,7 +1831,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: cooperative pandemic board game
 
@@ -132,6 +132,7 @@ has nb_outbreaks => (
 
 
 
+
 sub inc_outbreaks {
     my $self = shift;
     return if $self->nb_outbreaks == 8; # FIXME: game dependant?
@@ -148,6 +149,38 @@ has too_many_cards => (
     weak_ref => 1,
 );
 
+
+# whether there will be a propagation in this turn
+has propagation => (
+    metaclass => 'Bool',
+    is        => 'ro',
+    isa       => 'Bool',
+    default   => 1,
+    provides  => {
+        set   => 'enable_propagation',
+        unset => 'disable_propagation',
+    }
+);
+
+has nb_epidemics => (
+    metaclass => 'Counter',
+    is        => 'ro',
+    isa       => 'Int',
+    provides  => {
+        inc => 'inc_epidemics',
+        set => 'set_epidemics',
+    },
+);
+
+
+sub infection_rate {
+    my $self = shift;
+    my $map  = $self->map;
+    my $nbepidemics = $self->nb_epidemics;
+    my @rates = $map->infection_rates;
+    return $nbepidemics >= scalar(@rates)
+        ? $rates[-1] : $rates[$nbepidemics];
+}
 
 has next_step => ( is=>'rw', isa=>'Str', clearer=>'clear_next_step' );
 
@@ -184,7 +217,7 @@ Games::Pandemic - cooperative pandemic board game
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =head1 SYNOPSIS
 
@@ -211,6 +244,14 @@ Increment number of outbreaks, up to a maximum of 8.
 
 
 
+=head2 my $nb = $game->infection_rate;
+
+Return the infection rate, that is, the number of cities infected per
+turn. This rate is growing with number of epidemics, according to the
+table given by the map's C<infection_rates()> method.
+
+
+
 =head2 Games::Pandemic->run;
 
 Create the various POE sessions, and start the POE kernel.
@@ -227,7 +268,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

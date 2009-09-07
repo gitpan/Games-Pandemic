@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Map::Pandemic;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: standard pandemic map from real game
 
@@ -97,6 +97,15 @@ return (
 );
 }
 
+sub infection_rates {
+    return (2, 2, 2, 3, 3, 4, 4);
+}
+
+sub _raw_special_cards {
+    qw{ Airlift Forecast GovernmentGrant OneQuietNight ResilientPopulation };
+}
+
+
 sub _raw_start_city {
     return 4; # start at atlanta
 }
@@ -134,7 +143,7 @@ Games::Pandemic::Map::Pandemic - standard pandemic map from real game
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =head1 AUTHOR
 
@@ -146,7 +155,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

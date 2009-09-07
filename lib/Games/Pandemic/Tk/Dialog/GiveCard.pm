@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::GiveCard;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: pandemic dialog to give cards
 
@@ -97,7 +97,7 @@ augment _build_gui => sub {
             -anchor => 'w',
         )->pack(@TOP, @FILLX);
 
-        # display cards
+        # display players
         my $selplayer = $self->_player->role;
         foreach my $player ( @players ) {
             # to display a radiobutton with image + text, we need to
@@ -166,7 +166,7 @@ Games::Pandemic::Tk::Dialog::GiveCard - pandemic dialog to give cards
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =begin Pod::Coverage
 
@@ -202,7 +202,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

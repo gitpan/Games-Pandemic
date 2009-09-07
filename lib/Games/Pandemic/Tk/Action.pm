@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Action;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: action item for main pandemic window
 
@@ -122,7 +122,7 @@ Games::Pandemic::Tk::Action - action item for main pandemic window
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =head1 SYNOPSIS
 
@@ -197,7 +197,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

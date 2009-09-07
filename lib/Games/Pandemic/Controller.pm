@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Controller;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: controller for a pandemic game
 
@@ -53,6 +53,36 @@ event action => sub {
     # FIXME: check src vs current player
 
     $K->yield("_action_$action", @params);
+};
+
+
+
+event airlift => sub {
+    my ($player, $card, $selplayer, $city) = @_[ARG0..$#_];
+
+    # basic checks
+    return unless $player->owns_card($card);
+    my $from = $selplayer->location;
+    return if $from eq $city;
+
+    # play special card: move player
+    $selplayer->set_location($city);
+    $K->post( main => 'player_move', $selplayer, $from, $city );
+
+    # drop the card
+    my $game = Games::Pandemic->instance;
+    $player->drop_card( $card );
+    $game->cards->discard( $card );
+    $K->post( main => 'drop_card', $player, $card );
+
+    # check that there are not too many cards
+    foreach my $player ( $game->all_players ) {
+        next if $player->nb_cards <= $player->max_cards;
+        $game->set_too_many_cards($player);
+        $K->post( main => 'too_many_cards', $player );
+        return;
+    }
+    $game->clear_too_many_cards;
 };
 
 
@@ -111,6 +141,71 @@ event drop_cards => sub {
 
 
 
+event forecast => sub {
+    my ($player, $card, @cards) = @_[ARG0..$#_];
+    my $game = Games::Pandemic->instance;
+    my $deck = $game->infection;
+
+    # basic checks
+    return unless $player->owns_card($card);
+
+    # check if cards are the correct ones
+    my @curr = $deck->future;
+    splice @curr, 0, @curr-6;
+    return if join('+', sort @cards) ne join('+', sort @curr);
+
+    # rearrange the cards
+    $deck->next for 1..6;
+    $deck->refill( reverse @cards );
+
+    # drop the card
+    $player->drop_card( $card );
+    $game->cards->discard( $card );
+    $K->post( main => 'drop_card', $player, $card );
+
+    # check that there are not too many cards
+    foreach my $player ( $game->all_players ) {
+        next if $player->nb_cards <= $player->max_cards;
+        $game->set_too_many_cards($player);
+        $K->post( main => 'too_many_cards', $player );
+        return;
+    }
+    $game->clear_too_many_cards;
+};
+
+
+
+event government_grant => sub {
+    my ($player, $card, $city) = @_[ARG0..$#_];
+
+    # basic checks
+    return unless $player->owns_card($card);
+    return if $city->has_station;
+
+    # play special card: build station
+    my $game = Games::Pandemic->instance;
+    $city->build_station;
+    $game->dec_stations;
+    $K->post( main => 'build_station', $city );
+
+    # drop the card
+    $player->drop_card( $card );
+    $game->cards->discard( $card );
+    $K->post( main => 'drop_card', $player, $card );
+
+    # check that there are not too many cards
+    foreach my $player ( $game->all_players ) {
+        next if $player->nb_cards <= $player->max_cards;
+        $game->set_too_many_cards($player);
+        $K->post( main => 'too_many_cards', $player );
+        return;
+    }
+    $game->clear_too_many_cards;
+};
+
+
+
+
 event new_game => sub {
     my $game = Games::Pandemic->instance;
     $game->has_started;
@@ -122,7 +217,8 @@ event new_game => sub {
     # 5 research stations available. FIXME: should it be part of the map?
     $game->set_stations( 5 );
 
-    # no outbreaks yet
+    # no epidemics and no outbreaks yet
+    $game->set_epidemics( 0 );
     $game->set_outbreaks( 0 );
 
     # create the player cards deck
@@ -160,8 +256,10 @@ event new_game => sub {
     # FIXME: by now we're creating a fixed set of players, should be
     # configurable
     # FIXME: initial number of card depends of map / number of players
-    $K->yield( _new_player => 'Researcher', 4 );
-    $K->yield( _new_player => 'Scientist', 4 );
+    my @roles = shuffle qw{ Researcher Scientist OperationsExpert };
+    $K->yield( _new_player => $_, 4 ) for @roles[0..1];
+    #$K->yield( _new_player => 'Researcher', 4 );
+    #$K->yield( _new_player => 'Scientist', 4 );
     #$K->yield( _new_player => 'Medic', 4 );
     #$K->yield( _new_player => 'Dispatcher', 4 );
     #$K->yield( _new_player => 'OperationsExpert', 4 );
@@ -170,6 +268,74 @@ event new_game => sub {
     $K->yield( '_next_player' );
 };
 
+
+
+event one_quiet_night => sub {
+    my ($player, $card) = @_[ARG0..$#_];
+
+    # basic check
+    return unless $player->owns_card($card);
+
+    # play special card
+    my $game = Games::Pandemic->instance;
+    $game->disable_propagation;
+    # FIXME: update gui?
+
+    # drop the card
+    $player->drop_card( $card );
+    $game->cards->discard( $card );
+    $K->post( main => 'drop_card', $player, $card );
+
+    # check that there are not too many cards
+    foreach my $player ( $game->all_players ) {
+        next if $player->nb_cards <= $player->max_cards;
+        $game->set_too_many_cards($player);
+        $K->post( main => 'too_many_cards', $player );
+        return;
+    }
+    $game->clear_too_many_cards;
+};
+
+
+
+event resilient_population => sub {
+    my ($player, $card, $city) = @_[ARG0..$#_];
+    my $game = Games::Pandemic->instance;
+    my $deck = $game->infection;
+
+    my $after_epidemic = ($deck->nbdiscards == 0);
+    my @past = $after_epidemic
+        ? ( reverse $deck->future )[ 0 .. $deck->previous_nbdiscards-1 ]
+        : $deck->past;
+
+    # basic checks
+    return unless $player->owns_card($card);
+    return unless grep { $_->city eq $city } @past;
+
+    # play special card: make population resilient
+    if ( $after_epidemic ) {
+        my @future = $deck->future;
+        $deck->clear_cards;
+        $deck->refill( grep { $_->city ne $city } @future );
+    } else {
+        $deck->clear_pile;
+        $deck->discard( grep { $_->city ne $city } @past );
+    }
+
+    # drop the card
+    $player->drop_card( $card );
+    $game->cards->discard( $card );
+    $K->post( main => 'drop_card', $player, $card );
+
+    # check that there are not too many cards
+    foreach my $player ( $game->all_players ) {
+        next if $player->nb_cards <= $player->max_cards;
+        $game->set_too_many_cards($player);
+        $K->post( main => 'too_many_cards', $player );
+        return;
+    }
+    $game->clear_too_many_cards;
+};
 
 # -- private event
 
@@ -493,7 +659,7 @@ event _deal_card => sub {
 
         # check if we hit a new epidemic
         if ( $card->isa('Games::Pandemic::Card::Epidemic') ) {
-            $K->yield( '_epidemic' );
+            $K->yield( '_epidemic', $card );
             next;
         }
 
@@ -553,9 +719,9 @@ event _end_of_actions => sub {
 
 
 #
-# event: _epidemic()
+# event: _epidemic( $card )
 #
-# an epidemic card has been drawn.
+# an epidemic $card has been drawn.
 #
 event _epidemic => sub {
     my $game = Games::Pandemic->instance;
@@ -568,12 +734,16 @@ event _epidemic => sub {
     $K->post( main => 'epidemic', $city );
 
     # then already hit cities ready for a new turn...
+    $deck->discard( $card );
     my @cards = $deck->past;
-    push @cards, $card;
     $deck->clear_pile;
     $deck->refill( shuffle @cards );
 
-    # FIXME: update infection rate
+    # update infection rate
+    $game->inc_epidemics;
+
+    # discard the epidemic card
+    $game->cards->discard( $_[ARG0] );
 };
 
 
@@ -713,14 +883,19 @@ event _no_more_cubes => sub {
 #
 event _propagate => sub {
     my $game   = Games::Pandemic->instance;
-    my $icards = $game->infection;
 
-    # propagate diseases
-    do {
-        my $card = $icards->next;
-        $K->yield( _infect => $card->city, 1 );
-        $icards->discard( $card );
-    } for 1 .. 2; # FIXME: infection rate
+    if ( $game->propagation ) {
+        my $icards = $game->infection;
+
+        # propagate diseases
+        do {
+            my $card = $icards->next;
+            $K->yield( _infect => $card->city, 1 );
+            $icards->discard( $card );
+        } for 1 .. $game->infection_rate;
+    } else {
+        $game->enable_propagation;
+    }
 
     # update game state
     $game->set_state('end_of_propagation');
@@ -754,7 +929,7 @@ Games::Pandemic::Controller - controller for a pandemic game
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =begin Pod::Coverage
 
@@ -763,6 +938,12 @@ START
 =end Pod::Coverage
 
 =head1 METHODS
+
+=head2 event: airlift($player, $card, $selplayer, $city)
+
+Special event card: move a player in any city.
+
+
 
 =head2 event: close()
 
@@ -782,9 +963,33 @@ Request from C<$player> to remove some C<@cards> from her hands.
 
 
 
+=head2 event: forecast($player, $card, @cards)
+
+Special event card: rearrange infections to come.
+
+
+
+=head2 event: government_grant($player, $card, $city)
+
+Special event card: add a new research station.
+
+
+
 =head2 event: new_game()
 
 Create a new game: (re-)initialize the map, and various internal states.
+
+
+
+=head2 event: one_quiet_night($player, $card)
+
+Special event card: prevent disease propagation during this turn.
+
+
+
+=head2 event: resilient_population($player, $card, $city)
+
+Special event card: remove a city from the game.
 
 
 
@@ -798,7 +1003,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

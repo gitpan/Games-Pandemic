@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Map;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: pandemic map information
 
@@ -22,6 +22,11 @@ use MooseX::AttributeHelpers;
 use MooseX::SemiAffordanceAccessor;
 
 use Games::Pandemic::Card::City;
+use Games::Pandemic::Card::Special::Airlift;
+use Games::Pandemic::Card::Special::Forecast;
+use Games::Pandemic::Card::Special::GovernmentGrant;
+use Games::Pandemic::Card::Special::OneQuietNight;
+use Games::Pandemic::Card::Special::ResilientPopulation;
 use Games::Pandemic::City;
 use Games::Pandemic::Disease;
 use Games::Pandemic::Utils;
@@ -152,9 +157,13 @@ sub sharedir {
 
 sub cards {
     my $self = shift;
-    return
+    my @citycards =
         map { Games::Pandemic::Card::City->new(city=>$_) }
         $self->all_cities;
+    my @special =
+        map { my $class = "Games::Pandemic::Card::Special::$_"; $class->new }
+        $self->_raw_special_cards;
+    return (@citycards, @special);
 }
 
 
@@ -189,7 +198,7 @@ Games::Pandemic::Map - pandemic map information
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =begin Pod::Coverage
 
@@ -214,8 +223,8 @@ various files.
 
 =head2 my @cards = $map->cards;
 
-Return a list of C<Games::Pandemic::Card>: specific cards depending on
-the map, plus one card per city defined in the map. They will be used
+Return a list of C<Games::Pandemic::Card>: special event cards depending
+on the map, plus one card per city defined in the map. They will be used
 for the regular deck. Note that the cards will B<not> be shuffled.
 
 
@@ -242,7 +251,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

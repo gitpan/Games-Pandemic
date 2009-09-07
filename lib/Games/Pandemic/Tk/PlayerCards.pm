@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::PlayerCards;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: pandemic dialog to show player cards
 
@@ -21,6 +21,7 @@ use Moose;
 use MooseX::POE;
 use MooseX::AttributeHelpers;
 use MooseX::SemiAffordanceAccessor;
+use POE;
 use Readonly;
 use Tk;
 
@@ -81,7 +82,7 @@ sub STOP {
 }
 
 
-# -- public methods
+# -- public events
 
 
 event new_player => sub {
@@ -105,6 +106,7 @@ event new_player => sub {
 event gain_card => sub {
     my ($self, $player, $card) = @_[OBJECT, ARG0, ARG1];
     my $top = $self->_toplevel;
+    my $s   = $self->_session;
 
     # replace existing cards frame
     my $fcards = $self->_w("cards_$player");
@@ -115,8 +117,16 @@ event gain_card => sub {
     # repopulate new frame
     foreach my $card ( $player->all_cards ) {
         my $f = $fcards->Frame->pack(@TOP, @FILLX);
-        $f->Label( -image => image($card->icon, $top) )->pack(@LEFT);
-        $f->Label( -text => $card->label, -anchor=>'w' )->pack(@LEFT);
+        my $img = $f->Label( -image => image($card->icon, $top) )->pack(@LEFT);
+        my $lab = $f->Label( -text => $card->label, -anchor=>'w' )->pack(@LEFT);
+
+        # special cards can be clicked
+        if ( $card->isa('Games::Pandemic::Card::Special') ) {
+            my $sub = $s->postback('_special_card_clicked', $player, $card);
+            $_->bind('<1>', $sub) for ($img, $lab, $f);
+            $f->bind('<Enter>', sub { $f->configure(-relief=>'raised'); } );
+            $f->bind('<Leave>', sub { $f->configure(-relief=>'flat'); } );
+        }
     }
 };
 
@@ -141,6 +151,20 @@ event toggle_visibility => sub {
     my $top  = $self->_toplevel;
     my $method = $top->state eq 'normal' ? 'withdraw' : 'deiconify';
     $top->$method;
+};
+
+
+# -- private events
+
+#
+# event: _special_card_clicked( $card )
+#
+# received when user has clicked on a special $card.
+#
+event _special_card_clicked => sub {
+    my ($self, $args) = @_[OBJECT, ARG0];
+    my ($player, $card) = @$args;
+    $K->post( main => $card->event, $player, $card );
 };
 
 
@@ -196,7 +220,7 @@ Games::Pandemic::Tk::PlayerCards - pandemic dialog to show player cards
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =begin Pod::Coverage
 
@@ -257,7 +281,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

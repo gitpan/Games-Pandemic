@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Deck;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: pandemic card deck
 
@@ -39,10 +39,12 @@ has cards => (
     required   => 1,
     auto_deref => 1,
     provides   => {
-        count => 'nbcards',
-        pop   => 'next',
-        push  => 'refill',
-        shift => 'last',
+        clear    => 'clear_cards',
+        count    => 'nbcards',
+        elements => 'future',
+        pop      => 'next',
+        push     => 'refill',
+        shift    => 'last',
     },
 );
 
@@ -52,12 +54,24 @@ has _pile => (
     default    => sub { [] },
     auto_deref => 1,
     provides   => {
-        clear    => 'clear_pile',
+        clear    => '_clear_pile',
         count    => 'nbdiscards',
         elements => 'past',
         push     => 'discard',
     },
 );
+
+has previous_nbdiscards => ( is=>'rw', isa=>'Int' );
+
+
+# -- public methods
+
+
+sub clear_pile {
+    my $self = shift;
+    $self->set_previous_nbdiscards( $self->nbdiscards );
+    $self->_clear_pile;
+}
 
 
 no Moose;
@@ -75,7 +89,7 @@ Games::Pandemic::Deck - pandemic card deck
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =begin Pod::Coverage
 
@@ -88,6 +102,15 @@ DEMOLISH
 A C<Games::Pandemic::Deck> contains 2 sets of C<Games::Pandemic::Card>:
 a drawing deck and a discard pile.
 
+=head1 METHODS
+
+=head2 $deck->clear_pile;
+
+Store the number of cards in the pile in C<previous_nbdiscards> and
+clear the pile.
+
+
+
 =head1 AUTHOR
 
   Jerome Quelin
@@ -98,7 +121,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 

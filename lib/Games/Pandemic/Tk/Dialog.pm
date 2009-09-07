@@ -5,14 +5,14 @@
 # 
 # This is free software, licensed under:
 # 
-#   The GNU General Public License, Version 3, June 2007
+#   The GNU General Public License, Version 2, June 1991
 # 
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog;
-our $VERSION = '0.8.0';
+our $VERSION = '1.000000';
 
 # ABSTRACT: base class for pandemic dialog windows
 
@@ -159,6 +159,9 @@ sub _build_gui {
     } else {
         $top->resizable(0,0);
     }
+
+    # allow dialogs to finish once everything is in place
+    $self->_finish_gui if $self->can('_finish_gui');
 }
 
 
@@ -178,7 +181,7 @@ Games::Pandemic::Tk::Dialog - base class for pandemic dialog windows
 
 =head1 VERSION
 
-version 0.8.0
+version 1.000000
 
 =begin Pod::Coverage
 
@@ -222,7 +225,7 @@ This software is Copyright (c) 2009 by Jerome Quelin.
 
 This is free software, licensed under:
 
-  The GNU General Public License, Version 3, June 2007
+  The GNU General Public License, Version 2, June 1991
 
 =cut 
 
