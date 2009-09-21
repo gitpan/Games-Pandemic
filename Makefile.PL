@@ -9,7 +9,7 @@ WriteMakefile(
   NAME      => 'Games::Pandemic',
   AUTHOR    => 'Jerome\ Quelin',
   ABSTRACT  => 'cooperative\ pandemic\ board\ game',
-  VERSION   => '1.000000',
+  VERSION   => '1.092640',
   EXE_FILES => [ qw(bin/pandemic) ],
   (eval { ExtUtils::MakeMaker->VERSION(6.31) } ? (LICENSE => 'gpl') : ()),
   PREREQ_PM    => {

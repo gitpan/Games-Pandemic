@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Card::Special::Airlift;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: airlift event card for pandemic
 
@@ -48,7 +48,7 @@ Games::Pandemic::Card::Special::Airlift - airlift event card for pandemic
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =head1 DESCRIPTION
 

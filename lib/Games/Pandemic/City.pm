@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::City;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: pandemic city object
 
@@ -163,7 +163,7 @@ Games::Pandemic::City - pandemic city object
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =begin Pod::Coverage
 

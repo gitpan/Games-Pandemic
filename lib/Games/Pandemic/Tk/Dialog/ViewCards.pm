@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::ViewCards;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: dialog window to show cards
 
@@ -93,7 +93,7 @@ Games::Pandemic::Tk::Dialog::ViewCards - dialog window to show cards
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =begin Pod::Coverage
 

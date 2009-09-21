@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Controller;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: controller for a pandemic game
 
@@ -67,6 +67,7 @@ event airlift => sub {
 
     # play special card: move player
     $selplayer->set_location($city);
+    _check_auto_clean_on_cure();
     $K->post( main => 'player_move', $selplayer, $from, $city );
 
     # drop the card
@@ -82,6 +83,7 @@ event airlift => sub {
         $K->post( main => 'too_many_cards', $player );
         return;
     }
+    $K->yield( $game->next_step ) if $game->too_many_cards;
     $game->clear_too_many_cards;
 };
 
@@ -170,6 +172,7 @@ event forecast => sub {
         $K->post( main => 'too_many_cards', $player );
         return;
     }
+    $K->yield( $game->next_step ) if $game->too_many_cards;
     $game->clear_too_many_cards;
 };
 
@@ -200,6 +203,7 @@ event government_grant => sub {
         $K->post( main => 'too_many_cards', $player );
         return;
     }
+    $K->yield( $game->next_step ) if $game->too_many_cards;
     $game->clear_too_many_cards;
 };
 
@@ -256,7 +260,7 @@ event new_game => sub {
     # FIXME: by now we're creating a fixed set of players, should be
     # configurable
     # FIXME: initial number of card depends of map / number of players
-    my @roles = shuffle qw{ Researcher Scientist OperationsExpert };
+    my @roles = shuffle qw{ Researcher Scientist OperationsExpert Medic };
     $K->yield( _new_player => $_, 4 ) for @roles[0..1];
     #$K->yield( _new_player => 'Researcher', 4 );
     #$K->yield( _new_player => 'Scientist', 4 );
@@ -293,6 +297,7 @@ event one_quiet_night => sub {
         $K->post( main => 'too_many_cards', $player );
         return;
     }
+    $K->yield( $game->next_step ) if $game->too_many_cards;
     $game->clear_too_many_cards;
 };
 
@@ -334,6 +339,7 @@ event resilient_population => sub {
         $K->post( main => 'too_many_cards', $player );
         return;
     }
+    $K->yield( $game->next_step ) if $game->too_many_cards;
     $game->clear_too_many_cards;
 };
 
@@ -392,6 +398,7 @@ event _action_charter => sub {
     my $from = $player->location;
     $player->set_location($city);
     $K->post( main => 'player_move', $player, $from, $city );
+    _check_auto_clean_on_cure();
     $K->yield('_action_done');
 
     # drop the card
@@ -461,6 +468,8 @@ event _action_discover => sub {
     $disease->find_cure;
     $K->post( main => 'cure', $disease );
 
+    _check_auto_clean_on_cure();
+
     # check if disease is eradicated
     $K->yield( '_eradicate', $disease )
         if $disease->has_cure && $disease->nbleft == $disease->nbmax;
@@ -524,6 +533,7 @@ event _action_fly => sub {
     my $from = $player->location;
     $player->set_location($city);
     $K->post( main => 'player_move', $player, $from, $city );
+    _check_auto_clean_on_cure();
     $K->yield('_action_done');
 
     # drop the card
@@ -550,6 +560,7 @@ event _action_move => sub {
         my $from = $player->location;
         $player->set_location($city);
         $K->post( main => 'player_move', $player, $from, $city );
+        _check_auto_clean_on_cure();
         $K->yield('_action_done');
     } else {
         # invalid move
@@ -621,6 +632,7 @@ event _action_shuttle => sub {
     my $from = $player->location;
     $player->set_location($city);
     $K->post( main => 'player_move', $player, $from, $city );
+    _check_auto_clean_on_cure();
     $K->yield('_action_done');
 };
 
@@ -769,12 +781,17 @@ event _eradicate => sub {
 #
 event _infect => sub {
     my ($city, $nb, $disease, $seen) = @_[ARG0..$#_];
+    my $game = Games::Pandemic->instance;
     $nb      //= 1;
     $disease //= $city->disease;
     $seen    //= {}; # FIXME: padre//
 
     # disease eradicated: no infection! \o/
     return if $disease->is_eradicated;
+    return if $disease->has_cure &&
+        grep { $_->location eq $city  }
+        grep { $_->auto_clean_on_cure }
+        $game->all_players;
 
     # perform the infection & update the gui
     my ($outbreak, $nbreal) = $city->infect($nb, $disease);
@@ -790,7 +807,6 @@ event _infect => sub {
     return unless $outbreak && !$seen->{$city};
 
     # update number of outbreaks
-    my $game = Games::Pandemic->instance;
     $game->inc_outbreaks;
     if ( $game->nb_outbreaks == 8 ) { # FIXME: map dependant?
         $K->yield('_too_many_outbreaks');
@@ -914,6 +930,39 @@ event _too_many_outbreaks => sub {
 };
 
 
+# -- private subs
+
+sub _check_auto_clean_on_cure {
+    my $game = Games::Pandemic->instance;
+
+    # only diseases with a cure are eligible
+    my @diseases =
+        grep { $_->has_cure }
+        $game->map->all_diseases ;
+
+    foreach my $player ( $game->all_players ) {
+        # only works for player with auto_clean_on_cure property
+        next unless $player->auto_clean_on_cure;
+
+        # check all diseases
+        my $city = $player->location;
+        foreach my $disease ( @diseases ) {
+            my $nb = $city->get_infection( $disease );
+            next unless $nb; # no infection, move on
+
+            # yup, let's treat automatically
+            # FIXME - should be in a sub?
+            $city->treat($disease, $nb);
+            $disease->return($nb);
+            $K->post( main => 'treatment', $city );
+
+            # check if disease is eradicated
+            $K->yield( '_eradicate', $disease )
+                if $disease->has_cure && $disease->nbleft == $disease->nbmax;
+        }
+    }
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
@@ -929,7 +978,7 @@ Games::Pandemic::Controller - controller for a pandemic game
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =begin Pod::Coverage
 

@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::PlayerCards;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: pandemic dialog to show player cards
 
@@ -220,7 +220,7 @@ Games::Pandemic::Tk::PlayerCards - pandemic dialog to show player cards
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =begin Pod::Coverage
 

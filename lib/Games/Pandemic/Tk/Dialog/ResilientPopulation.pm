@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::ResilientPopulation;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: dialog window to remove a city from being infected
 
@@ -189,7 +189,7 @@ Games::Pandemic::Tk::Dialog::ResilientPopulation - dialog window to remove a cit
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =begin Pod::Coverage
 

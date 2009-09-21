@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: base class for pandemic dialog windows
 
@@ -181,7 +181,7 @@ Games::Pandemic::Tk::Dialog - base class for pandemic dialog windows
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =begin Pod::Coverage
 

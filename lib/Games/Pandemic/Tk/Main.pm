@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Main;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: main pandemic window
 
@@ -1588,7 +1588,7 @@ Games::Pandemic::Tk::Main - main pandemic window
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =begin Pod::Coverage
 

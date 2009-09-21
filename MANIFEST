@@ -106,6 +106,8 @@ lib/Games/Pandemic/share/roles/scientist-pawn-16.png
 lib/LocaleData/Games-Pandemic-messages.pot
 lib/LocaleData/fr/LC_MESSAGES/Games-Pandemic.mo
 lib/LocaleData/fr/LC_MESSAGES/Games-Pandemic.po
+lib/LocaleData/ja/LC_MESSAGES/Games-Pandemic.mo
+lib/LocaleData/ja/LC_MESSAGES/Games-Pandemic.po
 t/00-compile.t
 t/author-critic.t
 t/release-meta-yaml.t

@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Action;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: action item for main pandemic window
 
@@ -122,7 +122,7 @@ Games::Pandemic::Tk::Action - action item for main pandemic window
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =head1 SYNOPSIS
 

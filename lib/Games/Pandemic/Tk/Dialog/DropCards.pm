@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::DropCards;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: pandemic dialog to drop cards
 
@@ -157,7 +157,7 @@ Games::Pandemic::Tk::Dialog::DropCards - pandemic dialog to drop cards
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =begin Pod::Coverage
 

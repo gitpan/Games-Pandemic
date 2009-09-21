@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: cooperative pandemic board game
 
@@ -189,11 +189,6 @@ has next_step => ( is=>'rw', isa=>'Str', clearer=>'clear_next_step' );
 
 
 sub run {
-    my $self = shift;
-
-    # fetch the singleton if called as a class method
-    $self = $self->instance unless ref($self);
-
     # create the poe sessions
     Games::Pandemic::Controller->new;
     Games::Pandemic::Tk::Main->new;
@@ -203,7 +198,7 @@ sub run {
 }
 
 no Moose;
-__PACKAGE__->meta->make_immutable;
+#__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -217,7 +212,7 @@ Games::Pandemic - cooperative pandemic board game
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =head1 SYNOPSIS
 

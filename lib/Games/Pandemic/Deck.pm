@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Deck;
-our $VERSION = '1.000000';
+our $VERSION = '1.092640';
 
 # ABSTRACT: pandemic card deck
 
@@ -89,7 +89,7 @@ Games::Pandemic::Deck - pandemic card deck
 
 =head1 VERSION
 
-version 1.000000
+version 1.092640
 
 =begin Pod::Coverage
 
