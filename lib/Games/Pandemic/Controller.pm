@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Controller;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: controller for a pandemic game
 
@@ -978,7 +978,7 @@ Games::Pandemic::Controller - controller for a pandemic game
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =begin Pod::Coverage
 

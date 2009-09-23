@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Role::Dispatcher;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: dispatcher pandemic role
 
@@ -43,7 +43,7 @@ Games::Pandemic::Role::Dispatcher - dispatcher pandemic role
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =begin Pod::Coverage
 

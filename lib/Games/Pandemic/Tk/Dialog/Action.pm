@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::Action;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: pandemic dialog to confirm an action
 
@@ -73,7 +73,7 @@ Games::Pandemic::Tk::Dialog::Action - pandemic dialog to confirm an action
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =begin Pod::Coverage
 

@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Card::Special::Forecast;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: "forecast" event card for pandemic
 
@@ -49,7 +49,7 @@ Games::Pandemic::Card::Special::Forecast - "forecast" event card for pandemic
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =head1 DESCRIPTION
 

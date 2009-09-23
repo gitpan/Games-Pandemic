@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::Airlift;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: dialog window to move a player with airlift
 
@@ -232,7 +232,7 @@ Games::Pandemic::Tk::Dialog::Airlift - dialog window to move a player with airli
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =begin Pod::Coverage
 

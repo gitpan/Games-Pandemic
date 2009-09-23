@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::GiveCard;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: pandemic dialog to give cards
 
@@ -166,7 +166,7 @@ Games::Pandemic::Tk::Dialog::GiveCard - pandemic dialog to give cards
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =begin Pod::Coverage
 

@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Card;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: base class for pandemic cards
 
@@ -50,7 +50,7 @@ Games::Pandemic::Card - base class for pandemic cards
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =begin Pod::Coverage
 

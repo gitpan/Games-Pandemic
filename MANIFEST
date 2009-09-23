@@ -1,4 +1,5 @@
 Changes
+Changes~
 LICENSE
 MANIFEST
 MANIFEST.SKIP
@@ -7,6 +8,7 @@ Makefile.PL
 README
 bin/pandemic
 dist.ini
+dist.ini~
 lib/Games/Pandemic.pm
 lib/Games/Pandemic/Card.pm
 lib/Games/Pandemic/Card/City.pm

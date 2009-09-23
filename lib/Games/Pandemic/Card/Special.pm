@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Card::Special;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: base class for special pandemic event cards
 
@@ -52,7 +52,7 @@ Games::Pandemic::Card::Special - base class for special pandemic event cards
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =head1 DESCRIPTION
 

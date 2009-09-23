@@ -1,7 +1,6 @@
 Revision history for Games::Pandemic.
 
-1.092660  2009-09-23 15:46:41 UTC
- - added missing prereq - poe::loop::tk not part of poe anymore
+{{$NEXT}}
 
 1.092640 Mon Sep 21 17:11:14 2009
  - introducing medic player

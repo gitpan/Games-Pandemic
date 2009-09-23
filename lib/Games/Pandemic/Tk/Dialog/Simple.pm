@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::Simple;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: generic pandemic dialog
 
@@ -76,7 +76,7 @@ Games::Pandemic::Tk::Dialog::Simple - generic pandemic dialog
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =begin Pod::Coverage
 

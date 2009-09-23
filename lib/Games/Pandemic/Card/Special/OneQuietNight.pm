@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 package Games::Pandemic::Card::Special::OneQuietNight;
-our $VERSION = '1.092640';
+our $VERSION = '1.092660';
 
 # ABSTRACT: quiet night event card for pandemic
 
@@ -49,7 +49,7 @@ Games::Pandemic::Card::Special::OneQuietNight - quiet night event card for pande
 
 =head1 VERSION
 
-version 1.092640
+version 1.092660
 
 =head1 DESCRIPTION
 
