@@ -1,19 +1,20 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::Forecast;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Tk::Dialog::Forecast::VERSION = '1.111010';
+}
 # ABSTRACT: dialog window to play a forecast
 
 use File::Spec::Functions qw{ catfile  };
@@ -23,12 +24,13 @@ use MooseX::SemiAffordanceAccessor;
 use POE;
 use Readonly;
 use Tk;
+use Tk::Sugar;
 use Tk::Tiler;
 
 extends 'Games::Pandemic::Tk::Dialog';
 
+use Games::Pandemic::Tk::Utils qw{ image };
 use Games::Pandemic::Utils;
-use Games::Pandemic::Tk::Utils;
 
 Readonly my $K => $poe_kernel;
 
@@ -66,18 +68,18 @@ augment _build_gui => sub {
     my $card = $self->card;
 
     # icon + text
-    my $f   = $top->Frame->pack(@TOP,@FILLX);
+    my $f   = $top->Frame->pack(top, fillx);
     my $img  = image( catfile($SHAREDIR, 'cards', 'forecast-48.png') );
-    $f->Label(-image => $img)->pack(@LEFT, @FILL2, @PAD10);
+    $f->Label(-image => $img)->pack(left, fill2, pad10);
     $f->Label(
         -text       => $card->description,
         -justify    => 'left',
         -wraplength => '6c',
-    )->pack(@LEFT, @FILLX, @PAD10);
+    )->pack(left, fillx, pad10);
 
     # main elements
     my $text = T('Rearrange the infections to come as you wish:');
-    $top->Label(-text => $text, -anchor=>'w')->pack(@TOP, @FILLX, @PAD5);
+    $top->Label(-text => $text, W)->pack(top, fillx, pad5);
 
     # peek the next infections
     my $game = Games::Pandemic->instance;
@@ -88,21 +90,21 @@ augment _build_gui => sub {
     $self->_set_cards(\@cards);
 
     # the frame holding the infections to come
-    my $finfections = $top->Frame->pack(@TOP, @XFILL2, @PAD5);
+    my $finfections = $top->Frame->pack(top, xfill2, pad5);
     my $i = 1;
     foreach my $card ( @cards ) {
-        my $fcard = $finfections->Frame->pack(@TOP, @FILLX);
-        my $lab = $fcard->Label( -text  => "$i - ", -anchor => 'w' )->pack(@LEFT);
-        $fcard->Label( -image => image($card->icon, $top) )->pack(@LEFT);
-        $fcard->Label( -text  => $card->label, -anchor => 'w' )->pack(@LEFT, @XFILLX);
+        my $fcard = $finfections->Frame->pack(top, fillx);
+        my $lab = $fcard->Label( -text  => "$i - ", W )->pack(left);
+        $fcard->Label( -image => image($card->icon, $top) )->pack(left);
+        $fcard->Label( -text  => $card->label, -anchor => 'w' )->pack(left, xfillx);
         my $up   = $fcard->Button(
             -image   => 'navup16',
             -command => [ $self, '_move', $card, -1 ],
-        )->pack(@LEFT);
+        )->pack(left);
         my $down = $fcard->Button(
             -image   => 'navdown16',
             -command => [ $self, '_move', $card, 1 ],
-        )->pack(@LEFT);
+        )->pack(left);
         $self->_set_w("f$card", $fcard);
         $self->_set_w("lab$card",  $lab);
         $self->_set_w("up$card",   $up);
@@ -147,10 +149,10 @@ sub _redraw_infections {
     
     my $i = 1;
     foreach my $card ( @cards ) {
-        $self->_w("f$card")->pack(@TOP, @FILLX);
+        $self->_w("f$card")->pack(top, fillx);
         $self->_w("lab$card") ->configure( -text => "$i - " );
-        $self->_w("up$card")  ->configure( $i == 1 ? @ENOFF : @ENON );
-        $self->_w("down$card")->configure( $i == 6 ? @ENOFF : @ENON );
+        $self->_w("up$card")  ->configure( $i == 1 ? disabled : enabled );
+        $self->_w("down$card")->configure( $i == 6 ? disabled : enabled );
         $i++;
     }
 }
@@ -180,7 +182,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -189,13 +190,7 @@ Games::Pandemic::Tk::Dialog::Forecast - dialog window to play a forecast
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-BUILD
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 SYNOPSIS
 
@@ -214,9 +209,11 @@ L<Games::Pandemic::Card::Special::Forecast> card.
 The card should be passed in the constructor, along with the player
 holding the card.
 
+=for Pod::Coverage BUILD
+
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -226,8 +223,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

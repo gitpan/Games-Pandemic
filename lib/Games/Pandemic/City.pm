@@ -1,23 +1,24 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::City;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::City::VERSION = '1.111010';
+}
 # ABSTRACT: pandemic city object
 
-use Moose;
-use MooseX::AttributeHelpers;
+use Moose 0.92;
+use MooseX::Has::Sugar;
 use MooseX::SemiAffordanceAccessor;
 
 use Games::Pandemic::Utils;
@@ -29,25 +30,25 @@ use Games::Pandemic::Utils;
 # hell out of xgettext when one tries to access $foo->y. indeed, it
 # will skip random portions of your file, without any warning.
 # therefore, i'm using coordx / coordy.
-has id      => ( is => 'ro', required => 1, isa => 'Int' );
-has name    => ( is => 'ro', required => 1, isa => 'Str' );
-has coordx  => ( is => 'ro', required => 1, isa => 'Num' );
-has coordy  => ( is => 'ro', required => 1, isa => 'Num' );
-has xreal   => ( is => 'ro', required => 1, isa => 'Num' );
-has yreal   => ( is => 'ro', required => 1, isa => 'Num' );
-has disease => ( is => 'ro', required => 1, isa => 'Games::Pandemic::Disease', weak_ref => 1 );
-has _map    => ( is => 'ro', required => 1, isa => 'Games::Pandemic::Map', weak_ref => 1 );
+has id      => ( ro, required, isa => 'Int' );
+has name    => ( ro, required, isa => 'Str' );
+has coordx  => ( ro, required, isa => 'Num' );
+has coordy  => ( ro, required, isa => 'Num' );
+has xreal   => ( ro, required, isa => 'Num' );
+has yreal   => ( ro, required, isa => 'Num' );
+has disease => ( ro, required, weak_ref, isa => 'Games::Pandemic::Disease' );
+has _map    => ( ro, required, weak_ref, isa => 'Games::Pandemic::Map' );
 
 
 
 has has_station => (
-    metaclass => 'Bool',
-    is        => 'rw',
-    isa       => 'Bool',
-    default   => 0,
-    provides  => {
-        set     => 'build_station',
-        unset   => 'quash_station',
+    rw,
+    traits  => ['Bool'],
+    isa     => 'Bool',
+    default => 0,
+    handles => {
+        build_station => 'set',
+        quash_station => 'unset',
     }
 );
 
@@ -65,24 +66,21 @@ has has_station => (
 #    see public method infect()
 #
 has _infections => (
-    metaclass => 'Collection::Array',
-    is        => 'ro',
-    isa       => 'ArrayRef[Int]',
-    default   => sub { [] },
-    provides  => {
-        get => '_get_infection',
-        set => '_set_infection',
+    ro,
+    traits  => ['Array'],
+    isa     => 'ArrayRef[Int]',
+    default => sub { [] },
+    handles => {
+        _get_infection => 'get',
+        _set_infection => 'set',
     },
 );
 
 has neighbour_ids => (
-    metaclass => 'Collection::Array',
-    is        => 'ro',
-    required  => 1,
-    isa       => 'ArrayRef',
-    provides  => {
-        elements => '_neighbour_ids',
-    },
+    ro, required,
+    traits   => ['Array'],
+    isa      => 'ArrayRef',
+    handles  => { _neighbour_ids => 'elements' },
 );
 
 
@@ -154,7 +152,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -163,13 +160,7 @@ Games::Pandemic::City - pandemic city object
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-DEMOLISH
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 DESCRIPTION
 
@@ -191,7 +182,7 @@ have different attributes:
 =item * disease: a ref to a C<Games::Pandemic::Disease> object, which is
 the disease which will infect the city by default
 
-=back 
+=back
 
 =head1 METHODS
 
@@ -207,14 +198,10 @@ Remove the research station that was in the city.
 
 Return true if the city has a research station.
 
-
-
 =head2 my @cities = $city->neighbours;
 
 Return a list of C<Games::Pandemic::City>, which are the direct
 neighbours of C<$city>.
-
-
 
 =head2 my ($outbreak, $nbreal) = $city->infect( [ $nb [, $disease] ] )
 
@@ -225,23 +212,19 @@ city can only hold up to a maximum number of disease items).
 
 C<$nb> defaults to 1, and C<$disease> to the city disease.
 
-
-
 =head2 my $nb = $city->get_infection( $disease );
 
 Return the number of C<$disease> items for the C<$city>.
-
-
 
 =head2 $city->treat( $disease, $nb );
 
 Remove C<$nb> items from C<$disease> in C<$city>.
 
-
+=for Pod::Coverage DEMOLISH
 
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -251,8 +234,9 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+
+

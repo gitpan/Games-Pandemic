@@ -1,31 +1,34 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::DropCards;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Tk::Dialog::DropCards::VERSION = '1.111010';
+}
 # ABSTRACT: pandemic dialog to drop cards
 
 use Moose;
+use MooseX::Has::Sugar;
 use MooseX::SemiAffordanceAccessor;
 use POE;
 use Readonly;
 use Tk;
+use Tk::Sugar;
 
 extends 'Games::Pandemic::Tk::Dialog';
 
+use Games::Pandemic::Tk::Utils qw{ image };
 use Games::Pandemic::Utils;
-use Games::Pandemic::Tk::Utils;
 
 Readonly my $K => $poe_kernel;
 
@@ -33,19 +36,19 @@ Readonly my $K => $poe_kernel;
 # -- accessors
 
 # player that will loose some cards
-has player => ( is=>'ro', required=>1, weak_ref=>1, isa=>'Games::Pandemic::Player' );
+has player => ( ro, required, weak_ref, isa=>'Games::Pandemic::Player' );
 
 # selected cards to be dropped
 has _cards => (
-    metaclass  => 'Collection::Hash',
-    is         => 'ro',
-    isa        => 'HashRef[Games::Pandemic::Card]',
-    default    => sub { {} },
-    provides   => {
-        values  => '_selcards',
-        delete  => '_deselect_card',
-        set     => '_select_card',
-        exists  => '_is_card_selected',
+    ro,
+    traits  => ['Hash'],
+    isa     => 'HashRef[Games::Pandemic::Card]',
+    default => sub { {} },
+    handles => {
+        _selcards         => 'values',
+        _deselect_card    => 'delete',
+        _select_card      => 'set',
+        _is_card_selected => 'exists',
     }
 );
 
@@ -59,7 +62,7 @@ has _cards => (
 #
 sub BUILD {
     my $self = shift;
-    $self->_w('ok')->configure(@ENOFF);
+    $self->_w('ok')->configure(disabled);
 }
 
 sub _build_title   { T('Discard') }
@@ -87,7 +90,7 @@ sub _card_click {
 
     # 
     my @cards = $self->_selcards;
-    $self->_w('ok')->configure( scalar(@cards) ? @ENON : @ENOFF );
+    $self->_w('ok')->configure( scalar(@cards) ? enabled : disabled );
 }
 
 #
@@ -116,37 +119,35 @@ augment _build_gui => sub {
     my $player = $self->player;
     my @cards  = $player->all_cards;
 
-    my $f = $top->Frame->pack(@TOP, @XFILL2, @PAD10);
+    my $f = $top->Frame->pack(top, xfill2, pad10);
     $f->Label(
         -text   => T('Select cards to drop:'),
         -anchor => 'w',
-    )->pack(@TOP, @FILLX);
+    )->pack(top, fillx);
 
     # display cards
     foreach my $card ( @cards ) {
         # to display a checkbutton with image + text, we need to
         # create a checkbutton with a label just next to it.
-        my $fcity = $f->Frame->pack(@TOP, @FILLX);
+        my $fcity = $f->Frame->pack(top, fillx);
         my $selected;
         my $cb = $fcity->Checkbutton(
             -image    => image($card->icon, $top),
             -command  => sub { $self->_card_click($card); },
-        )->pack(@LEFT);
+        )->pack(left);
         my $lab = $fcity->Label(
             -text   => $card->label,
             -anchor => 'w',
-        )->pack(@LEFT, @FILLX);
+        )->pack(left, fillx);
         $lab->bind( '<1>', sub { $cb->invoke; } );
     }
 };
-
 
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;
-
 
 
 =pod
@@ -157,13 +158,7 @@ Games::Pandemic::Tk::Dialog::DropCards - pandemic dialog to drop cards
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-BUILD
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 SYNOPSIS
 
@@ -182,9 +177,11 @@ should be discarded. When clicking ok, the selected card(s) will be
 dropped. This takes no action, and is handled by
 L<Games::Pandemic::Controller>.
 
+=for Pod::Coverage BUILD
+
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -194,8 +191,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

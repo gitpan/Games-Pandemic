@@ -1,23 +1,26 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::Action;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Tk::Dialog::Action::VERSION = '1.111010';
+}
 # ABSTRACT: pandemic dialog to confirm an action
 
 use Moose;
+use MooseX::Has::Sugar;
 use MooseX::SemiAffordanceAccessor;
+use MooseX::Types::Moose qw{ ArrayRef Str };
 use POE;
 use Readonly;
 use Tk;
@@ -25,15 +28,14 @@ use Tk;
 extends 'Games::Pandemic::Tk::Dialog::Simple';
 
 use Games::Pandemic::Utils;
-use Games::Pandemic::Tk::Utils;
 
 Readonly my $K => $poe_kernel;
 
 
 # -- accessors
 
-has action    => ( is=>'ro', isa=>'Str', required=>1 );
-has post_args => ( is=>'ro', isa=>'ArrayRef', required=>1 );
+has action    => ( ro, required, isa=>Str );
+has post_args => ( ro, required, isa=>ArrayRef );
 
 
 # -- initialization
@@ -56,13 +58,10 @@ sub _valid {
     $self->_close;
 }
 
-
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;
-
 
 
 =pod
@@ -73,13 +72,7 @@ Games::Pandemic::Tk::Dialog::Action - pandemic dialog to confirm an action
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-BUILD
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 SYNOPSIS
 
@@ -102,9 +95,11 @@ the text and icon.
 It has a cancel button to close the dialog, and a C<$label> action
 button that will perform a L<POE::Kernel> post with the C<$postargs>.
 
+=for Pod::Coverage BUILD
+
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -114,8 +109,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

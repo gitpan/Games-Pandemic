@@ -1,19 +1,20 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::ChooseDisease;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Tk::Dialog::ChooseDisease::VERSION = '1.111010';
+}
 # ABSTRACT: pandemic dialog to select which disease to treat
 
 use Moose;
@@ -21,11 +22,12 @@ use MooseX::SemiAffordanceAccessor;
 use POE;
 use Readonly;
 use Tk;
+use Tk::Sugar;
 
 extends 'Games::Pandemic::Tk::Dialog';
 
+use Games::Pandemic::Tk::Utils qw{ image };
 use Games::Pandemic::Utils;
-use Games::Pandemic::Tk::Utils;
 
 Readonly my $K => $poe_kernel;
 
@@ -73,7 +75,7 @@ augment _build_gui => sub {
     my $self = shift;
     my $top  = $self->_toplevel;
 
-    my $f = $top->Frame->pack(@TOP, @XFILL2, @PAD10);
+    my $f = $top->Frame->pack(top, xfill2, pad10);
     my @diseases = $self->diseases;
     $self->_set_disease( $diseases[0] );
     # enclosed cards in their own frame
@@ -81,24 +83,24 @@ augment _build_gui => sub {
     $f->Label(
         -text   => T('Select which disease to treat:'),
         -anchor => 'w',
-    )->pack(@TOP, @FILLX);
+    )->pack(top, fillx);
 
     # display cards
     my $seldisease = $self->_disease->name;
     foreach my $disease ( @diseases ) {
         # to display a radiobutton with image + text, we need to
         # create a radiobutton with a label just next to it.
-        my $fdisease = $f->Frame->pack(@TOP, @FILLX);
+        my $fdisease = $f->Frame->pack(top, fillx);
         my $rb = $fdisease->Radiobutton(
             -image    => image($disease->image('cube', 16), $top),
             -variable => \$seldisease,
             -value    => $disease->name,
             -command  => sub { $self->_set_disease($disease); },
-        )->pack(@LEFT);
+        )->pack(left);
         my $lab = $fdisease->Label(
             -text   => $disease->name,
             -anchor => 'w',
-        )->pack(@LEFT, @FILLX);
+        )->pack(left, fillx);
         $lab->bind( '<1>', sub { $rb->invoke; } );
     }
 };
@@ -111,7 +113,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -120,13 +121,7 @@ Games::Pandemic::Tk::Dialog::ChooseDisease - pandemic dialog to select which dis
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-BUILD
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 SYNOPSIS
 
@@ -144,9 +139,11 @@ This dialog will show the C<@diseases> of current city. When clicking
 ok, the selected disease will be treated. This takes one action, and is
 handled by L<Games::Pandemic::Controller>.
 
+=for Pod::Coverage BUILD
+
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -156,8 +153,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

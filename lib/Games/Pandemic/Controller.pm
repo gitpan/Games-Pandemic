@@ -1,19 +1,20 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Controller;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Controller::VERSION = '1.111010';
+}
 # ABSTRACT: controller for a pandemic game
 
 use List::Util      qw{ shuffle };
@@ -969,7 +970,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -978,13 +978,7 @@ Games::Pandemic::Controller - controller for a pandemic game
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-START
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 METHODS
 
@@ -992,59 +986,43 @@ START
 
 Special event card: move a player in any city.
 
-
-
 =head2 event: close()
 
 Player has closed current game.
-
-
 
 =head2 event: continue()
 
 Player wishes to move game forward.
 
-
-
 =head2 event: drop_cards( $player, @cards )
 
 Request from C<$player> to remove some C<@cards> from her hands.
-
-
 
 =head2 event: forecast($player, $card, @cards)
 
 Special event card: rearrange infections to come.
 
-
-
 =head2 event: government_grant($player, $card, $city)
 
 Special event card: add a new research station.
-
-
 
 =head2 event: new_game()
 
 Create a new game: (re-)initialize the map, and various internal states.
 
-
-
 =head2 event: one_quiet_night($player, $card)
 
 Special event card: prevent disease propagation during this turn.
-
-
 
 =head2 event: resilient_population($player, $card, $city)
 
 Special event card: remove a city from the game.
 
-
+=for Pod::Coverage START
 
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -1054,8 +1032,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

@@ -1,23 +1,24 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Deck;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Deck::VERSION = '1.111010';
+}
 # ABSTRACT: pandemic card deck
 
-use Moose;
-use MooseX::AttributeHelpers;
+use Moose 0.92;
+use MooseX::Has::Sugar;
 use MooseX::SemiAffordanceAccessor;
 
 use Games::Pandemic::Utils;
@@ -34,34 +35,34 @@ sub DEMOLISH {
 # -- accessors
 
 has cards => (
-    metaclass  => 'Collection::Array',
+    required,
+    auto_deref,
+    traits     => ['Array'],
     isa        => 'ArrayRef[Games::Pandemic::Card]',
-    required   => 1,
-    auto_deref => 1,
-    provides   => {
-        clear    => 'clear_cards',
-        count    => 'nbcards',
-        elements => 'future',
-        pop      => 'next',
-        push     => 'refill',
-        shift    => 'last',
+    handles => {
+        clear_cards => 'clear',
+        nbcards     => 'count',
+        future      => 'elements',
+        next        => 'pop',
+        refill      => 'push',
+        last        => 'shift',
     },
 );
 
 has _pile => (
-    metaclass  => 'Collection::Array',
+    auto_deref,
+    traits => ['Array'],
     isa        => 'ArrayRef[Games::Pandemic::Card]',
     default    => sub { [] },
-    auto_deref => 1,
-    provides   => {
-        clear    => '_clear_pile',
-        count    => 'nbdiscards',
-        elements => 'past',
-        push     => 'discard',
+    handles => {
+        _clear_pile => 'clear',
+        nbdiscards  => 'count',
+        past        => 'elements',
+        discard     => 'push',
     },
 );
 
-has previous_nbdiscards => ( is=>'rw', isa=>'Int' );
+has previous_nbdiscards => ( rw, isa=>'Int' );
 
 
 # -- public methods
@@ -80,7 +81,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -89,13 +89,7 @@ Games::Pandemic::Deck - pandemic card deck
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-DEMOLISH
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 DESCRIPTION
 
@@ -109,11 +103,11 @@ a drawing deck and a discard pile.
 Store the number of cards in the pile in C<previous_nbdiscards> and
 clear the pile.
 
-
+=for Pod::Coverage DEMOLISH
 
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -123,8 +117,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

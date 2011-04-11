@@ -1,13 +1,13 @@
 #!perl
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 
 BEGIN {
   unless ($ENV{RELEASE_TESTING}) {

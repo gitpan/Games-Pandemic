@@ -1,50 +1,52 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Tk::Dialog::VERSION = '1.111010';
+}
 # ABSTRACT: base class for pandemic dialog windows
 
-use Moose;
-use MooseX::AttributeHelpers;
+use Moose 0.92;
+use MooseX::Has::Sugar;
 use MooseX::SemiAffordanceAccessor;
 use Tk;
+use Tk::Sugar;
 
+use Games::Pandemic::Tk::Utils qw{ pandemic_icon };
 use Games::Pandemic::Utils;
-use Games::Pandemic::Tk::Utils;
 
 
 # -- accessors
 
-has parent    => ( is=>'ro', isa=>'Tk::Widget', required=>1, weak_ref=>1, );
-has title     => ( is=>'ro', isa=>'Str',  lazy_build=>1 );
-has header    => ( is=>'ro', isa=>'Str',  lazy_build=>1 );
-has resizable => ( is=>'ro', isa=>'Bool', lazy_build=>1 );
-has _toplevel => ( is=>'rw', isa=>'Tk::Toplevel' );
-has _ok       => ( is=>'ro', isa=>'Str', lazy_build=>1 );
-has _cancel   => ( is=>'ro', isa=>'Str', lazy_build=>1 );
+has parent    => ( ro, required, weak_ref, isa=>'Tk::Widget' );
+has title     => ( ro, lazy_build, isa=>'Str' );
+has header    => ( ro, lazy_build, isa=>'Str' );
+has resizable => ( ro, lazy_build, isa=>'Bool' );
+has _toplevel => ( rw, isa=>'Tk::Toplevel' );
+has _ok       => ( ro, lazy_build, isa=>'Str' );
+has _cancel   => ( ro, lazy_build, isa=>'Str' );
 
 
 # a hash to store the widgets for easier reference.
 has _widgets => (
-    metaclass => 'Collection::Hash',
-    is        => 'ro',
-    isa       => 'HashRef',
-    default   => sub { {} },
-    provides  => {
-        'set' => '_set_w',
-        'get' => '_w',
+    ro,
+    traits  => ['Hash'],
+    isa     => 'HashRef',
+    default => sub { {} },
+    handles => {
+        _set_w => 'set',
+        _w     => 'get',
     },
 );
 
@@ -119,7 +121,7 @@ sub _build_gui {
             -bg   => 'black',
             -fg   => 'white',
             -font => $font,
-        )->pack(@TOP, @PAD10, @IPAD10, @FILL2);
+        )->pack(top, pad10, ipad10, fill2);
     }
 
     # build sub-class gui elems
@@ -130,13 +132,13 @@ sub _build_gui {
     # the same width. since we pack them with expand set to true, their
     # width will grow - but equally. otherwise, their size would be
     # proportional to their english text.
-    my $fbuttons = $top->Frame->pack(@TOP, @FILLX);
+    my $fbuttons = $top->Frame->pack(top, fillx);
     if ( $self->_ok ) {
         my $but = $fbuttons->Button(
             -text    => $self->_ok,
             -width   => 10,
             -command => sub { $self->_valid },
-        )->pack(@LEFT, @XFILL2);
+        )->pack(left, xfill2);
         $self->_set_w('ok', $but);
         $top->bind('<Return>', sub { $self->_valid });
         $top->bind('<Escape>', sub { $self->_valid }) unless $self->_cancel;
@@ -146,7 +148,7 @@ sub _build_gui {
             -text    => $self->_cancel,
             -width   => 10,
             -command => sub { $self->_close },
-        )->pack(@LEFT, @XFILL2);
+        )->pack(left, xfill2);
         $self->_set_w('cancel', $but);
         $top->bind('<Escape>', sub { $self->_close });
         $top->bind('<Return>', sub { $self->_close }) unless $self->_ok;
@@ -172,7 +174,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -181,14 +182,7 @@ Games::Pandemic::Tk::Dialog - base class for pandemic dialog windows
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-BUILD
-DEMOLISH
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 DESCRIPTION
 
@@ -208,16 +202,19 @@ It accepts the following attributes:
 
 =item * header - a header to display at the top of the window, no default
 
-=back 
+=back
 
 To subclass it, declare your own attributes, create the lazy builders
 for the attributes, C<augment> the C<_build_gui()> method to create the
 bottom of the dialog window, and implement the C<_valid()> method that
 would be called when ok button is pressed.
 
+=for Pod::Coverage BUILD
+    DEMOLISH
+
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -227,8 +224,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

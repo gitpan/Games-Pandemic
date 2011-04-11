@@ -1,31 +1,33 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::PlayerCards;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Tk::PlayerCards::VERSION = '1.111010';
+}
 # ABSTRACT: pandemic dialog to show player cards
 
 use List::Util qw{ max };
-use Moose;
+use Moose      0.92;
+use MooseX::Has::Sugar;
 use MooseX::POE;
-use MooseX::AttributeHelpers;
 use MooseX::SemiAffordanceAccessor;
 use POE;
 use Readonly;
 use Tk;
+use Tk::Sugar;
 
-use Games::Pandemic::Tk::Utils;
+use Games::Pandemic::Tk::Utils qw{ image pandemic_icon };
 use Games::Pandemic::Utils;
 
 Readonly my $K => $poe_kernel;
@@ -33,19 +35,19 @@ Readonly my $K => $poe_kernel;
 
 # -- attributes & accessors
 
-has parent    => ( is=>'ro', required=>1, weak_ref=>1, isa=>'Tk::Widget' );
-has _toplevel => ( is=>'rw', isa=>'Tk::Toplevel' );
+has parent    => ( ro, required, weak_ref, isa=>'Tk::Widget' );
+has _toplevel => ( rw, isa=>'Tk::Toplevel' );
 
 # a hash with all the widgets, for easier reference.
 has _widgets => (
-    metaclass => 'Collection::Hash',
-    is        => 'ro',
-    isa       => 'HashRef',
-    default   => sub { {} },
-    provides  => {
-        set    => '_set_w',
-        get    => '_w',
-        delete => '_del_w',
+    ro,
+    traits  => ['Hash'],
+    isa     => 'HashRef',
+    default => sub { {} },
+    handles => {
+        _set_w => 'set',
+        _w     => 'get',
+        _del_w => 'delete',
     },
 );
 
@@ -53,7 +55,7 @@ has _widgets => (
 # since poe is already taking care of the references for us. however, we
 # need the session to call ->postback() to set the various gui callbacks
 # that will be fired upon gui events.
-has _session => ( is=>'rw', isa=>'POE::Session', weak_ref=>1 );
+has _session => ( rw, weak_ref, isa=>'POE::Session' );
 
 
 # -- initialization
@@ -90,14 +92,14 @@ event new_player => sub {
 
     # create the frame holding the player
     my $top   = $self->_toplevel;
-    my $frame = $top->Frame->pack(@LEFT, @XFILL2);
+    my $frame = $top->Frame->pack(left, xfill2);
     $self->_set_w("f$player", $frame);
 
-    my $ftitle = $frame->Frame->pack(@TOP, @FILLX);
-    $ftitle->Label( -image => image( $player->image('icon', 32), $top ) )->pack(@LEFT);
-    $ftitle->Label( -text  => $player->role )->pack(@LEFT);
+    my $ftitle = $frame->Frame->pack(top, fillx);
+    $ftitle->Label( -image => image( $player->image('icon', 32), $top ) )->pack(left);
+    $ftitle->Label( -text  => $player->role )->pack(left);
 
-    my $fcards = $frame->Frame->pack(@TOP, @XFILL2);
+    my $fcards = $frame->Frame->pack(top, xfill2);
     $self->_set_w("cards_$player", $fcards);
 };
 
@@ -111,14 +113,14 @@ event gain_card => sub {
     # replace existing cards frame
     my $fcards = $self->_w("cards_$player");
     $fcards->destroy;
-    $fcards = $self->_w("f$player")->Frame->pack(@TOP, @XFILL2);
+    $fcards = $self->_w("f$player")->Frame->pack(top, xfill2);
     $self->_set_w("cards_$player", $fcards);
 
     # repopulate new frame
     foreach my $card ( $player->all_cards ) {
-        my $f = $fcards->Frame->pack(@TOP, @FILLX);
-        my $img = $f->Label( -image => image($card->icon, $top) )->pack(@LEFT);
-        my $lab = $f->Label( -text => $card->label, -anchor=>'w' )->pack(@LEFT);
+        my $f = $fcards->Frame->pack(top, fillx);
+        my $img = $f->Label( -image => image($card->icon, $top) )->pack(left);
+        my $lab = $f->Label( -text => $card->label, -anchor=>'w' )->pack(left);
 
         # special cards can be clicked
         if ( $card->isa('Games::Pandemic::Card::Special') ) {
@@ -211,7 +213,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -220,14 +221,7 @@ Games::Pandemic::Tk::PlayerCards - pandemic dialog to show player cards
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-START
-STOP
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 SYNOPSIS
 
@@ -245,35 +239,28 @@ from the main window when the players gain or loose some cards.
 
 Request to add a new C<$player> to the window.
 
-
-
 =head2 event: gain_card($player, $card)
 
 Request to add a new C<$card> to C<$player>.
-
-
 
 =head2 event: drop_card($player, $card)
 
 Request to remove a C<$card> from C<$player>.
 
-
-
 =head2 event: destroy()
 
 Request to destroy the window.
-
-
 
 =head2 event: toggle_visibility()
 
 Request to hide/show window depending on its previous state.
 
-
+=for Pod::Coverage START
+    STOP
 
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -283,8 +270,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

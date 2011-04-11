@@ -1,19 +1,20 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Main;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Tk::Main::VERSION = '1.111010';
+}
 # ABSTRACT: main pandemic window
 
 use Convert::Color;
@@ -21,20 +22,22 @@ use File::Spec::Functions qw{ catfile };
 use Image::Size;
 use List::Util            qw{ min };
 use Math::Gradient        qw{ array_gradient };
-use Moose;
+use Moose                 0.92;
+use MooseX::Has::Sugar;
 use MooseX::POE;
 use MooseX::SemiAffordanceAccessor;
 use Readonly;
 use Tk;
+use Tk::Action;
 use Tk::Balloon;
 use Tk::Font;
 use Tk::JPEG;
 use Tk::Pane;
 use Tk::PNG;
 use Tk::ToolBar;
+use Tk::Sugar;
 
 use Games::Pandemic::Config;
-use Games::Pandemic::Tk::Action;
 use Games::Pandemic::Tk::Dialog::Action;
 use Games::Pandemic::Tk::Dialog::Airlift;
 use Games::Pandemic::Tk::Dialog::ChooseDisease;
@@ -46,7 +49,7 @@ use Games::Pandemic::Tk::Dialog::ResilientPopulation;
 use Games::Pandemic::Tk::Dialog::Simple;
 use Games::Pandemic::Tk::Dialog::ViewCards;
 use Games::Pandemic::Tk::PlayerCards;
-use Games::Pandemic::Tk::Utils;
+use Games::Pandemic::Tk::Utils  qw{ image pandemic_icon };
 use Games::Pandemic::Utils;
 
 Readonly my $K  => $poe_kernel;
@@ -60,65 +63,65 @@ Readonly my $TIME_GLOW  => 0.150;
 
 # a hash with all the widgets, for easier reference.
 has _widgets => (
-    metaclass => 'Collection::Hash',
-    is        => 'ro',
-    isa       => 'HashRef',
-    default   => sub { {} },
-    provides  => {
-        set    => '_set_w',
-        get    => '_w',
-        delete => '_del_w',
+    ro,
+    traits  => ['Hash'],
+    isa     => 'HashRef',
+    default => sub { {} },
+    handles => {
+        _set_w => 'set',
+        _w     => 'get',
+        _del_w => 'delete',
     },
 );
 
 # a hash with all the actions.
 has _actions => (
-    metaclass => 'Collection::Hash',
-    is        => 'ro',
-    isa       => 'HashRef',
-    default   => sub { {} },
-    provides  => {
-        set    => '_set_action',
-        get    => '_action',
+    ro,
+    traits  => ['Hash'],
+    isa     => 'HashRef',
+    default => sub { {} },
+    handles => {
+        _set_action => 'set',
+        _action     => 'get',
     },
 );
 
 # color gradient for outbreak scale
 has _outbreak_gradient => (
-    metaclass  => 'Collection::Array',
-    is         => 'ro',
-    isa        => 'ArrayRef[ArrayRef]',
-    auto_deref => 1,
-    lazy_build => 1,
-    provides   => {
-        get  => '_outbreak_color',            # my $c = $main->_outbreak_color($i);
-        push => '_add_to_outbreak_gradient',  # my $c = $main->_add_to_outbreak_gradient($rgb);
+    ro,
+    auto_deref,
+    lazy_build,
+    traits  => ['Array'],
+    isa     => 'ArrayRef[ArrayRef]',
+    handles => {
+        _outbreak_color           => 'get',   # my $c = $main->_outbreak_color($i);
+        _add_to_outbreak_gradient => 'push',  # my $c = $main->_add_to_outbreak_gradient($rgb);
     }
 );
 
 # color gradient for infection rate
 has _infection_rate_gradient => (
-    metaclass  => 'Collection::Array',
-    is         => 'ro',
-    isa        => 'ArrayRef[Str]',
-    auto_deref => 1,
-    lazy_build => 1,
-    provides   => {
-        shift => '_next_infection_rate_color',
-        push  => '_add_infection_rate_color',
+    ro,
+    auto_deref,
+    lazy_build,
+    traits  => ['Array'],
+    isa     => 'ArrayRef[Str]',
+    handles => {
+        _next_infection_rate_color => 'shift',
+        _add_infection_rate_color  => 'push',
     }
 );
 
 
 # currently selected player
-has _selplayer => ( is => 'rw', weak_ref => 1, isa => 'Games::Pandemic::Player' );
+has _selplayer => ( rw, weak_ref, isa => 'Games::Pandemic::Player' );
 
 
 # it's not usually a good idea to retain a reference on a poe session,
 # since poe is already taking care of the references for us. however, we
 # need the session to call ->postback() to set the various gui callbacks
 # that will be fired upon gui events.
-has _session => ( is=>'rw', isa=>'POE::Session', weak_ref=>1 );
+has _session => ( rw, weak_ref, isa=>'POE::Session' );
 
 
 # -- initialization
@@ -952,7 +955,7 @@ sub _build_action_bar {
     my $but = $tb->Button(
         -text    => T('Continue'),
         -command => $session->postback('_continue'),
-        @ENOFF,
+        enabled,
     );
     $self->_action('continue')->add_widget($but);
 }
@@ -973,7 +976,7 @@ sub _build_canvas {
     my $height = $config->get( 'canvas_height' );
 
     # creating the canvas
-    my $c  = $mw->Canvas(-width=>$width,-height=>$height)->pack(@TOP, @XFILL2);
+    my $c  = $mw->Canvas(-width=>$width,-height=>$height)->pack(top, xfill2);
     $self->_set_w('canvas', $c);
 
     # removing class bindings
@@ -1024,7 +1027,7 @@ sub _build_gui {
         map { "action_$_" } qw{ build discover drop pass share treat },
     );
     foreach my $what ( @enabled, @disabled ) {
-        my $action = Games::Pandemic::Tk::Action->new(
+        my $action = Tk::Action->new(
             window   => $mw,
             callback => $s->postback("_$what"),
         );
@@ -1159,11 +1162,11 @@ sub _build_status_bar {
     my $tipmsg;
 
     # the status bar itself is a frame
-    my $sb = $mw->Frame->pack(@RIGHT, @FILLX, -before=>$self->_w('canvas'));
+    my $sb = $mw->Frame->pack(right, fillx, -before=>$self->_w('canvas'));
     $self->_set_w( infobar => $sb );
 
 #    # research stations
-#    my $fstations = $sb->Frame->pack(@TOP, @PADX10);
+#    my $fstations = $sb->Frame->pack(top, padx10);
 #    my $img_nbstations = $fstations->Label(
 #        -image => image( catfile( $SHAREDIR, 'research-station-32.png' ) ),
 #    )->pack(@TOP);
@@ -1174,14 +1177,14 @@ sub _build_status_bar {
 #    $tip->attach($lab_nbstations, -msg=>$tipmsg);
 
     # diseases information
-    my $fdiseases = $sb->Frame->pack(@TOP, @PADX10);
-    my $fcures    = $sb->Frame->pack(@TOP, @PADX10);
+    my $fdiseases = $sb->Frame->pack(top, padx(10));
+    my $fcures    = $sb->Frame->pack(top, padx(10));
     foreach my $disease ( $map->all_diseases ) {
         # disease
         my $img_disease = $fdiseases->Label(
             -image => image( $disease->image('cube', 32) ),
-        )->pack(@TOP);
-        my $lab_disease = $fdiseases->Label->pack(@TOP);
+        )->pack(top);
+        my $lab_disease = $fdiseases->Label->pack(top);
         $self->_set_w("lab_disease_$disease", $lab_disease);
         $tipmsg = sprintf T("number of cubes\nof %s left"), $disease->name;
         $tip->attach($img_disease, -msg=>$tipmsg);
@@ -1190,7 +1193,7 @@ sub _build_status_bar {
         # cure
         my $lab_cure = $fcures->Label(
             -image => image( $disease->image('cure', 32) ),
-        )->pack(@TOP);
+        )->pack(top);
         $self->_set_w("lab_cure_$disease", $lab_cure);
         $tipmsg = sprintf T("cure for %s\nnot found"), $disease->name;
         $tip->attach($lab_cure, -msg=>$tipmsg);
@@ -1198,11 +1201,11 @@ sub _build_status_bar {
 
     # player cards information
     my $cards  = $game->cards;
-    my $fcards = $sb->Frame->pack(@TOP, @PADX10);
+    my $fcards = $sb->Frame->pack(top, padx(10));
     my $img_cards = $fcards->Label(
         -image => image( catfile( $SHAREDIR, 'card-player.png' ) ),
-    )->pack(@TOP);
-    my $lab_cards = $fcards->Label->pack(@TOP);
+    )->pack(top);
+    my $lab_cards = $fcards->Label->pack(top);
     $self->_set_w('lab_cards', $lab_cards);
     $img_cards->bind('<Button-1>', $s->postback('_show_past_cards'));
     $lab_cards->bind('<Button-1>', $s->postback('_show_past_cards'));
@@ -1212,11 +1215,11 @@ sub _build_status_bar {
 
     # infection information
     my $infection = $game->infection;
-    my $finfection = $sb->Frame->pack(@TOP, @PADX10);
+    my $finfection = $sb->Frame->pack(top, padx(10));
     my $img_infection = $finfection->Label(
         -image => image( catfile( $SHAREDIR, 'card-infection.png' ) ),
-    )->pack(@TOP);
-    my $lab_infection = $finfection->Label->pack(@TOP);
+    )->pack(top);
+    my $lab_infection = $finfection->Label->pack(top);
     $self->_set_w('lab_infection', $lab_infection);
     $img_infection->bind('<Button-1>', $s->postback('_show_past_infections'));
     $lab_infection->bind('<Button-1>', $s->postback('_show_past_infections'));
@@ -1225,8 +1228,8 @@ sub _build_status_bar {
     $tip->attach($lab_infection, -msg=>$tipmsg);
 
     # infection rate
-    my $firate = $sb->Frame(-bg=>'black')->pack(@TOP, @PADX10, @FILLX);
-    my $lab_irate = $firate->Label->pack(@TOP, @XFILL2);
+    my $firate = $sb->Frame(-bg=>'black')->pack(top, fillx, padx(10));
+    my $lab_irate = $firate->Label->pack(top, xfill2);
     $self->_set_w('lab_infection_rate', $lab_irate);
     $K->delay( _glow => $TIME_GLOW );
     $tipmsg = T("infection rate\n(number of epidemics)");
@@ -1238,8 +1241,8 @@ sub _build_status_bar {
         -sliderlength => 20,
         -from   => 8,
         -to     => 0,
-        @ENOFF,
-    )->pack(@TOP, @PADX10);
+        enabled,
+    )->pack(top, padx(10));
     $self->_set_w('outbreaks', $scale);
     $tipmsg = sprintf T("number of outbreaks\n(maximum %s)"), 8; # FIXME: map dependant?
     $tip->attach($scale, -msg=>$tipmsg);
@@ -1256,7 +1259,7 @@ sub _build_toolbar {
     my $session = $self->_session;
 
     # create the toolbar
-    my $tb = $mw->ToolBar( -movable => 0, @TOP );
+    my $tb = $mw->ToolBar( -movable => 0, top );
     $self->_set_w('toolbar', $tb);
 
     # the toolbar widgets
@@ -1438,7 +1441,7 @@ sub _draw_init_screen {
         # create the 'button' (really a clickable text)
         my $id = $c->createText(
             $width/2, $height/2 - (@buttons)/2*$pad + $i*$pad,
-            $active ? @ENON : @ENOFF,
+            $active ? enabled : disabled,
             -text         => $text,
             -fill         => '#dddddd',
             -activefill   => 'white',
@@ -1541,7 +1544,7 @@ sub _update_status {
     foreach my $disease ( $map->all_diseases ) {
         $self->_w("lab_disease_$disease")->configure(-text => $disease->nbleft);
         $self->_w("lab_cure_$disease")->configure(
-            $disease->has_cure ? (@ENON) : (@ENOFF) );
+            $disease->has_cure ? (enabled) : (disabled) );
     }
 
     # cards information
@@ -1560,12 +1563,12 @@ sub _update_status {
     # number of outbreaks
     my $outbreaks = $game->nb_outbreaks;
     my $scale = $self->_w('outbreaks');
-    $scale->configure(@ENON); # ->set() doesn't work if disabled
+    $scale->configure(enabled); # ->set() doesn't work if disabled
     $scale->set( $outbreaks );
     my $color = Convert::Color::RGB8->new( @{ $self->_outbreak_color($outbreaks) } );
     $scale->configure(
         -troughcolor => '#' . $color->hex,
-        @ENOFF
+        enabled,
     );
 
     # actions left
@@ -1579,7 +1582,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -1588,13 +1590,134 @@ Games::Pandemic::Tk::Main - main pandemic window
 
 =head1 VERSION
 
-version 1.092660
+version 1.111010
 
-=begin Pod::Coverage
+=head1 METHODS
 
-START
+=head2 event: action_done()
 
-=end Pod::Coverage
+Received when current player has finished an action.
+
+=head2 event: airlift( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::Airlift>. Does not require an action.
+
+=head2 event: all_cures_discovered()
+
+Received when game is won due to all cures being discovered
+
+=head2 event: build_station($city)
+
+Received when C<$city> gained a research station.
+
+=head2 event: cure($disease)
+
+Received when a cure has been found for C<$disease>.
+
+=head2 event: drop_card($player, $card)
+
+Received when C<$player> drops a C<$card>.
+
+=head2 event: end_of_actions()
+
+Received when current player has finished her actions.
+
+=head2 event: end_of_cards()
+
+Received when current player has received her cards for this turn.
+
+=head2 event: end_of_propagation()
+
+Received when propagation is done
+
+=head2 event: epidemic($city)
+
+Received when a new epidemic strikes C<$city>.
+
+=head2 event: eradicate($disease)
+
+Received when $disease has been eradicated.
+
+=head2 event: forecast( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::Forecast>. Does not require an action.
+
+=head2 event: gain_card($player, $card)
+
+Received when C<$player> got a new C<$card>.
+
+=head2 event: game_over()
+
+Received when game is over: user cannot advance the game any more.
+
+=head2 event: government_grant( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::GovernmentGrant>. Does not require
+an action.
+
+=head2 event: infection($city, $outbreak)
+
+Received when C<$city> gets infected. C<$outbreak> is true if this
+infection lead to a disease outbreak.
+
+=head2 event: new_game()
+
+Received when the controller started a new game. Display the new map
+(incl. cities), action & statusbar.
+
+=head2 event: new_player( $player )
+
+Received when the controller has just created a new player.
+
+=head2 event: next_action
+
+Received when player needs to do its next action.
+
+=head2 event: next_player( $player )
+
+Received when C<$player> starts its turn.
+
+=head2 event: no_more_cards()
+
+Received when game is over due to a lack of cards to deal.
+
+=head2 event: no_more_cubes( $disease )
+
+Received when game is over due to a lack of cards to deal.
+
+=head2 event: one_quiet_night( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::OneQuietNight>. Does not require
+an action.
+
+=head2 event: player_move( $player, $from ,$to )
+
+Received when C<$player> has moved between C<$from> and C<$to> cities.
+
+=head2 event: resilient_population( $player, $card )
+
+Received when C<$player> wants to play special C<$card>
+L<Games::Pandemic::Card::Special::ResilientPopulation>. Does not require
+an action.
+
+=head2 event: too_many_cards( $player )
+
+Received when C<$player> has too many cards: she must drop some before
+the game can continue.
+
+=head2 event: too_many_outbreaks()
+
+Received when there are too many outbreaks, and game is over.
+
+=head2 event: treatment( $city )
+
+Received when C<$city> has been treated.
+
+=for Pod::Coverage START
 
 =head1 ACKNOWLEDGEMENT
 
@@ -1638,192 +1761,11 @@ commercial use
 
 =item * airlift icon by David Vignoni, under a LGPL license
 
-=back 
-
-=head1 METHODS
-
-=head2 event: action_done()
-
-Received when current player has finished an action.
-
-
-
-=head2 event: airlift( $player, $card )
-
-Received when C<$player> wants to play special C<$card>
-L<Games::Pandemic::Card::Special::Airlift>. Does not require an action.
-
-
-
-=head2 event: all_cures_discovered()
-
-Received when game is won due to all cures being discovered
-
-
-
-=head2 event: build_station($city)
-
-Received when C<$city> gained a research station.
-
-
-
-=head2 event: cure($disease)
-
-Received when a cure has been found for C<$disease>.
-
-
-
-=head2 event: drop_card($player, $card)
-
-Received when C<$player> drops a C<$card>.
-
-
-
-=head2 event: end_of_actions()
-
-Received when current player has finished her actions.
-
-
-
-=head2 event: end_of_cards()
-
-Received when current player has received her cards for this turn.
-
-
-
-=head2 event: end_of_propagation()
-
-Received when propagation is done
-
-
-
-=head2 event: epidemic($city)
-
-Received when a new epidemic strikes C<$city>.
-
-
-
-=head2 event: eradicate($disease)
-
-Received when $disease has been eradicated.
-
-
-
-=head2 event: forecast( $player, $card )
-
-Received when C<$player> wants to play special C<$card>
-L<Games::Pandemic::Card::Special::Forecast>. Does not require an action.
-
-
-
-=head2 event: gain_card($player, $card)
-
-Received when C<$player> got a new C<$card>.
-
-
-
-=head2 event: game_over()
-
-Received when game is over: user cannot advance the game any more.
-
-
-
-=head2 event: government_grant( $player, $card )
-
-Received when C<$player> wants to play special C<$card>
-L<Games::Pandemic::Card::Special::GovernmentGrant>. Does not require
-an action.
-
-
-
-=head2 event: infection($city, $outbreak)
-
-Received when C<$city> gets infected. C<$outbreak> is true if this
-infection lead to a disease outbreak.
-
-
-
-=head2 event: new_game()
-
-Received when the controller started a new game. Display the new map
-(incl. cities), action & statusbar.
-
-
-
-=head2 event: new_player( $player )
-
-Received when the controller has just created a new player.
-
-
-
-=head2 event: next_action
-
-Received when player needs to do its next action.
-
-
-
-=head2 event: next_player( $player )
-
-Received when C<$player> starts its turn.
-
-
-
-=head2 event: no_more_cards()
-
-Received when game is over due to a lack of cards to deal.
-
-
-
-=head2 event: no_more_cubes( $disease )
-
-Received when game is over due to a lack of cards to deal.
-
-
-
-=head2 event: one_quiet_night( $player, $card )
-
-Received when C<$player> wants to play special C<$card>
-L<Games::Pandemic::Card::Special::OneQuietNight>. Does not require
-an action.
-
-
-
-=head2 event: player_move( $player, $from ,$to )
-
-Received when C<$player> has moved between C<$from> and C<$to> cities.
-
-
-
-=head2 event: resilient_population( $player, $card )
-
-Received when C<$player> wants to play special C<$card>
-L<Games::Pandemic::Card::Special::ResilientPopulation>. Does not require
-an action.
-
-
-
-=head2 event: too_many_cards( $player )
-
-Received when C<$player> has too many cards: she must drop some before
-the game can continue.
-
-
-
-=head2 event: too_many_outbreaks()
-
-Received when there are too many outbreaks, and game is over.
-
-
-
-=head2 event: treatment( $city )
-
-Received when C<$city> has been treated.
-
-
+=back
 
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -1833,8 +1775,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

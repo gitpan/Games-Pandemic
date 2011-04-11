@@ -1,19 +1,20 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::VERSION = '1.111010';
+}
 # ABSTRACT: cooperative pandemic board game
 
 # although it's not strictly needed to load POE::Kernel manually (since
@@ -25,6 +26,7 @@ our $VERSION = '1.092660';
 use POE::Kernel { loop => 'Tk' };
 
 use MooseX::Singleton;  # should come before any other moose
+use MooseX::Has::Sugar;
 use MooseX::POE;
 use MooseX::SemiAffordanceAccessor;
 
@@ -36,97 +38,93 @@ use Games::Pandemic::Tk::Main;
 # -- accessors
 
 has config => (
-    is       => 'ro',
+    ro,
     writer   => '_set_config',
     default  => sub { Games::Pandemic::Config->new },
     isa      => 'Games::Pandemic::Config'
 );
 
 has map => (
-    is      => 'rw',
+    rw,
     isa     => 'Games::Pandemic::Map',
     clearer => 'clear_map',
 );
 
 # player cards deck
 has cards => (
-    is      => 'rw',
+    rw,
     isa     => 'Games::Pandemic::Deck',
     clearer => 'clear_cards_deck',
 );
 
 # infection cards deck
 has infection => (
-    is      => 'rw',
+    rw,
     isa     => 'Games::Pandemic::Deck',
     clearer => 'clear_infection_deck',
 );
 
 # current players
 has _players => (
-    metaclass  => 'Collection::Array',
-    is         => 'ro',
-    isa        => 'ArrayRef[Games::Pandemic::Player]',
-    default    => sub { [] },
-    auto_deref => 1,
-    provides   => {
-        elements => 'all_players',       # my @p = $game->all_players;
-        push     => 'add_player',        # $game->add_player( $player );
-        clear    => 'clear_players',
+    ro, auto_deref,
+    traits  => ['Array'],
+    isa     => 'ArrayRef[Games::Pandemic::Player]',
+    default => sub { [] },
+    handles => {
+        all_players   => 'elements',       # my @p = $game->all_players;
+        add_player    => 'push',           # $game->add_player( $player );
+        clear_players => 'clear',
     }
 );
 # list of players waiting for their turn
 has _players_in_turn => (
-    metaclass  => 'Collection::Array',
-    is         => 'ro',
-    isa        => 'ArrayRef[Games::Pandemic::Player]',
-    default    => sub { [] },
-    auto_deref => 1,
-    provides   => {
-        push     => 'reinit_players',    # $game->reinit_players( $player );
-        shift    => 'next_player',       # my $p = $game->next_player;
-        clear    => 'clear_players_in_turn',
+    ro, auto_deref,
+    traits  => ['Array'],
+    isa     => 'ArrayRef[Games::Pandemic::Player]',
+    default => sub { [] },
+    handles => {
+        reinit_players        => 'push',  # $game->reinit_players( $player );
+        next_player           => 'shift', # my $p = $game->next_player;
+        clear_players_in_turn => 'clear',
     }
 );
 has curplayer => (
-    is       => 'rw',
-    isa      => 'Games::Pandemic::Player',
-    weak_ref => 1,
-    clearer  => 'clear_curplayer',
+    rw, weak_ref,
+    isa     => 'Games::Pandemic::Player',
+    clearer => 'clear_curplayer',
 );
 
 # game state
-has state => ( is=>'rw', isa=>'Str' );
+has state => ( rw, isa=>'Str' );
 has is_in_play => (
-    metaclass => 'Bool',
-    is        => 'ro',
-    isa       => 'Bool',
-    default   => 0,
-    provides  => {
-        set   => 'has_started',
-        unset => 'has_ended',
+    ro,
+    traits  => ['Bool'],
+    isa     => 'Bool',
+    default => 0,
+    handles => {
+        has_started => 'set',
+        has_ended   => 'unset',
     }
 );
 
 
 # number of research stations remaining to be build
 has stations => (
-    metaclass => 'Counter',
-    is        => 'ro',
-    isa       => 'Int',
-    provides  => {
-        dec => 'dec_stations',
-        set => 'set_stations',
-    },
+    rw,
+    traits  => ['Counter'],
+    default => 0, # just to clear moose warning
+    isa     => 'Int',
+    handles => { dec_stations => 'dec' },
 );
 
 has nb_outbreaks => (
-    metaclass => 'Counter',
-    is        => 'ro',
-    isa       => 'Int',
-    provides  => {
-        inc => '_inc_outbreaks',
-        set => 'set_outbreaks',
+    ro,
+    traits  => ['Counter'],
+    default => 0, # just to clear moose warning
+    isa     => 'Int',
+    handles => {
+        _inc_outbreaks => 'inc',
+        set_outbreaks  => 'set',
     },
 );
 
@@ -142,33 +140,33 @@ sub inc_outbreaks {
 
 # holds the player having too many cards - if any
 has too_many_cards => (
-    is       => 'rw',
-    isa      => 'Games::Pandemic::Player',
+    rw, weak_ref,
+    isa      => 'Maybe[Games::Pandemic::Player]',
     default  => undef,
     clearer  => 'clear_too_many_cards',
-    weak_ref => 1,
 );
 
 
 # whether there will be a propagation in this turn
 has propagation => (
-    metaclass => 'Bool',
-    is        => 'ro',
-    isa       => 'Bool',
-    default   => 1,
-    provides  => {
-        set   => 'enable_propagation',
-        unset => 'disable_propagation',
+    ro,
+    traits  => ['Bool'],
+    isa     => 'Bool',
+    default => 1,
+    handles => {
+        enable_propagation  => 'set',
+        disable_propagation => 'unset',
     }
 );
 
 has nb_epidemics => (
-    metaclass => 'Counter',
-    is        => 'ro',
-    isa       => 'Int',
-    provides  => {
-        inc => 'inc_epidemics',
-        set => 'set_epidemics',
+    ro,
+    traits  => ['Counter'],
+    default => 0, # just to clear moose warning
+    isa     => 'Int',
+    handles => {
+        inc_epidemics => 'inc',
+        set_epidemics => 'set',
     },
 );
 
@@ -203,7 +201,6 @@ no Moose;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -212,7 +209,7 @@ Games::Pandemic - cooperative pandemic board game
 
 =head1 VERSION
 
-version 1.092660
+version 1.111010
 
 =head1 SYNOPSIS
 
@@ -237,25 +234,47 @@ electronic copy.
 
 Increment number of outbreaks, up to a maximum of 8.
 
-
-
 =head2 my $nb = $game->infection_rate;
 
 Return the infection rate, that is, the number of cities infected per
 turn. This rate is growing with number of epidemics, according to the
 table given by the map's C<infection_rates()> method.
 
-
-
 =head2 Games::Pandemic->run;
 
 Create the various POE sessions, and start the POE kernel.
 
+=head1 SEE ALSO
 
+You can look for information on this module at:
+
+=over 4
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/Games-Pandemic>
+
+=item * See open / report bugs
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Games-Pandemic>
+
+=item * Git repository
+
+L<http://github.com/jquelin/games-pandemic>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/Games-Pandemic>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/Games-Pandemic>
+
+=back
 
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -265,8 +284,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

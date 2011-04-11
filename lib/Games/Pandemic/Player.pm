@@ -1,25 +1,25 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Player;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Player::VERSION = '1.111010';
+}
 # ABSTRACT: pandemic game player
 
 use File::Spec::Functions qw{ catfile };
 use List::MoreUtils       qw{ any };
-use Moose;
-use MooseX::AttributeHelpers;
+use Moose                 0.92;
 use MooseX::SemiAffordanceAccessor;
 use UNIVERSAL::require;
 
@@ -38,28 +38,26 @@ sub DEMOLISH {
 # -- accessors
 
 has _cards => (
-    metaclass  => 'Collection::Hash',
+    traits     => ['Hash'],
     is         => 'ro',
     isa        => 'HashRef[Games::Pandemic::Card]',
     default    => sub { {} },
     auto_deref => 1,
-    provides   => {
-        count   => 'nb_cards',        # my $nb = $player->nb_cards;
-        values  => '_all_cards',      # my @c = $player->all_cards;
-        delete  => 'drop_card',       # $player->drop_card( $card );
-        set     => '_add_card',       # $player->_add_card( $card, $card );
-        exists  => 'owns_card',       # my $bool = $player->owns_card($card);
+    handles    => {
+        nb_cards   => 'count',     # my $nb = $player->nb_cards;
+        _all_cards => 'values',    # my @c = $player->all_cards;
+        drop_card  => 'delete',    # $player->drop_card( $card );
+        _add_card  => 'set',       # $player->_add_card( $card, $card );
+        owns_card  => 'exists',    # my $bool = $player->owns_card($card);
     }
 );
 
 has actions_left => (
-    metaclass => 'Counter',
-    is        => 'rw',
-    isa       => 'Int',
-    provides  => {
-        dec => 'action_done',
-        set => 'set_actions_left',
-    },
+    traits  => ['Counter'],
+    is      => 'rw',
+    default => 0,   # just to clear moose warning
+    isa     => 'Int',
+    handles => { action_done => 'dec' },
 );
 
 has location => ( is=>'rw', isa=>'Games::Pandemic::City', lazy_build => 1 );
@@ -272,7 +270,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -281,13 +278,7 @@ Games::Pandemic::Player - pandemic game player
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-DEMOLISH
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 SYNOPSIS
 
@@ -315,8 +306,6 @@ Return the C<$color> (html notation) to be used for this player.
 =head2 my $role = $player->role;
 
 Return the (localized) name of C<$player>'s role.
-
-
 
 =head2 my $bool = $player->auto_clean_on_cure;
 
@@ -357,42 +346,30 @@ one go, even if the cure for the disease has not been discovered yet.
 
 Return the maximum number of cards that a player can have in her hands.
 
-
-
 =head2 my $path = $player->image( $what, $size );
 
 Return the C$<path> to an image for the player role. C<$what> can be either
 C<icon> or C<pawn>. C<$size> can be one of C<orig>, or 32 or 16. Note that not
 all combinations are possible.
 
-
-
 =head2 my @cards = $player->all_cards;
 
 Return the list of cards owned by C<$player>. The list is sorted by type
 of card, then by disease and by name.
-
-
 
 =head2 my $card = $player->owns_city_card( $city );
 
 Return the C<$card> representing C<$city> if the C<$player> owns it,
 undef otherwise.
 
-
-
 =head2 $player->gain_card( $card )
 
 C<$player> gains a new C<$card>.
-
-
 
 =head2 my $bool = $player->is_move_possible;
 
 Return true if C<$player> can move, starting from her current location. Always
 true. Included here for the sake of completeness.
-
-
 
 =head2 my $bool = $player->is_flight_possible;
 
@@ -400,19 +377,11 @@ Return true if C<$player> can fly (regular flight) starting from her current
 location. Flight is possible if the player has at least one city card, which is
 not the card representing the city in which the player is.
 
-
-
 =head2 my $bool = $player->is_charter_possible;
-
-
 
 =head2 my $bool = $player->is_shuttle_possible;
 
-
-
 =head2 my $bool = $player->is_join_possible;
-
-
 
 =head2 my $bool = $player->is_build_possible;
 
@@ -421,22 +390,16 @@ location. It is possible if she owns the card of the city, or if she is
 the operation expert. Of course it is impossible if there's already a
 station in the city.
 
-
-
 =head2 my $disease = $player->is_discover_possible;
 
 Return the C<$disease> that C<$player> can cure, that is, if she owns
 enough city cards of this disease and she is in a city with a research
 station. Return undef otherwise.
 
-
-
 =head2 my $bool = $player->is_treat_possible;
 
 Return true if C<$player> can treat a disease. It is possible if her current
 location is infected by one (or more) disease.
-
-
 
 =head2 my $bool = $player->is_share_possible;
 
@@ -444,27 +407,19 @@ Return true if C<$player> can share a card in her current location. It is
 possible if she owns the card of the city, or if she is the researcher. Of
 course it is impossible if player's alone in the city.
 
-
-
 =head2 my $bool = $player->is_pass_possible;
 
 Return true if C<$player> can pass. Always true. Included here for the sake of
 completeness.
 
-
-
 =head2 my $bool = $player->is_drop_possible;
 
 Return true if C<$player> can drop a card. True if she has at least one card.
-
-
 
 =head2 my $bool = $player->can_travel_to($city);
 
 Return true if C<$player> can travel to C<$city> by proximity. This
 means that C<$player> is in a location next to C<$city>.
-
-
 
 =head2 my $bool = $player->can_shuttle_to($city);
 
@@ -473,15 +428,13 @@ C<$city>. This means that both current player location and remote
 C<$city> have a research station. Of course, return value is false if
 C<$player> is currently located in <$city>.
 
-
-
 =head2 my $bool = $player->can_join_to($city);
 
-
+=for Pod::Coverage DEMOLISH
 
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -491,8 +444,9 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+
+

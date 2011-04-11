@@ -1,19 +1,20 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Utils;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Utils::VERSION = '1.111010';
+}
 # ABSTRACT: various utilities for pandemic
 
 use Devel::CheckOS        qw{ os_is };
@@ -78,7 +79,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -87,7 +87,7 @@ Games::Pandemic::Utils - various utilities for pandemic
 
 =head1 VERSION
 
-version 1.092660
+version 1.111010
 
 =head1 DESCRIPTION
 
@@ -102,18 +102,14 @@ Performs a call to C<gettext> on C<$string>, convert it from utf8 and
 return the result. Note that i18n is using C<Locale::TextDomain>
 underneath, so refer to this module for more information.
 
-
-
 =head2 debug( @stuff );
 
 Output C<@stuff> on stderr if we're in a local git checkout. Do nothing
 in regular builds.
 
-
-
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -123,8 +119,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

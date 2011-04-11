@@ -1,19 +1,20 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Role::Scientist;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Role::Scientist::VERSION = '1.111010';
+}
 # ABSTRACT: scientist pandemic role
 
 use Moose::Role;
@@ -33,7 +34,6 @@ no Moose::Role;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -42,18 +42,14 @@ Games::Pandemic::Role::Scientist - scientist pandemic role
 
 =head1 VERSION
 
-version 1.092660
+version 1.111010
 
-=begin Pod::Coverage
-
-color
-role
-
-=end Pod::Coverage
+=for Pod::Coverage color
+    role
 
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -63,8 +59,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

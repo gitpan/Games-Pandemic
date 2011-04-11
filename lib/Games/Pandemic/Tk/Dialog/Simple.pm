@@ -1,29 +1,31 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Tk::Dialog::Simple;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Tk::Dialog::Simple::VERSION = '1.111010';
+}
 # ABSTRACT: generic pandemic dialog
 
 use Moose;
 use MooseX::SemiAffordanceAccessor;
 use Tk;
+use Tk::Sugar;
 
 extends 'Games::Pandemic::Tk::Dialog';
 
+use Games::Pandemic::Tk::Utils qw{ image };
 use Games::Pandemic::Utils;
-use Games::Pandemic::Tk::Utils;
 
 
 # -- accessors
@@ -49,14 +51,14 @@ augment _build_gui => sub {
     my $top  = $self->_toplevel;
 
     # icon + text
-    my $f = $top->Frame->pack(@TOP,@XFILL2);
-    $f->Label(-image => image($self->icon,$top))->pack(@LEFT, @FILL2, @PAD10)
+    my $f = $top->Frame->pack(top, xfill2);
+    $f->Label(-image => image($self->icon,$top))->pack(left, fill2, pad10)
         if defined $self->icon;
     $f->Label(
         -text       => $self->text,
         -justify    => 'left',
         -wraplength => '6c',
-    )->pack(@LEFT, @XFILL2, @PAD10);
+    )->pack(left, fill2, pad10);
 };
 
 
@@ -67,7 +69,6 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 
-
 =pod
 
 =head1 NAME
@@ -76,13 +77,7 @@ Games::Pandemic::Tk::Dialog::Simple - generic pandemic dialog
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-BUILD
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 SYNOPSIS
 
@@ -102,9 +97,11 @@ it does not implement any action.
 
 The only mandatory paramater (beside C<parent> of course) is C<text>.
 
+=for Pod::Coverage BUILD
+
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -114,8 +111,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+

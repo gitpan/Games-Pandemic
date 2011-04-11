@@ -1,24 +1,25 @@
-# 
+#
 # This file is part of Games-Pandemic
-# 
+#
 # This software is Copyright (c) 2009 by Jerome Quelin.
-# 
+#
 # This is free software, licensed under:
-# 
+#
 #   The GNU General Public License, Version 2, June 1991
-# 
+#
 use 5.010;
 use strict;
 use warnings;
 
 package Games::Pandemic::Map;
-our $VERSION = '1.092660';
-
+BEGIN {
+  $Games::Pandemic::Map::VERSION = '1.111010';
+}
 # ABSTRACT: pandemic map information
 
 use File::Spec::Functions qw{ catdir catfile };
-use Moose;
-use MooseX::AttributeHelpers;
+use Moose                 0.92;
+use MooseX::Has::Sugar;
 use MooseX::SemiAffordanceAccessor;
 
 use Games::Pandemic::Card::City;
@@ -34,48 +35,41 @@ use Games::Pandemic::Utils;
 # -- accessors
 
 has _cities => (
-    metaclass  => 'Collection::Array',
-    is         => 'ro',
-    isa        => 'ArrayRef[Games::Pandemic::City]',
-    builder    => '_cities_builder',
-    lazy       => 1,  # _diseases() needs to be built before
-    auto_deref => 1,
-    provides   => {
-        elements => 'all_cities',       # my @c = $map->all_cities;
-        get      => 'city',             # my $c = $map->city(23);
-        find     => '_find_city',
+    ro, auto_deref,
+    lazy,       # _diseases() needs to be built before
+    traits  => ['Array'],
+    isa     => 'ArrayRef[Games::Pandemic::City]',
+    builder => '_cities_builder',
+    handles => {
+        all_cities => 'elements',       # my @c = $map->all_cities;
+        city       => 'get',            # my $c = $map->city(23);
+        _find_city => 'first',
     }
 );
 
 has _diseases => (
-    metaclass  => 'Collection::Array',
-    is         => 'ro',
-    isa        => 'ArrayRef[Games::Pandemic::Disease]',
-    builder    => '_diseases_builder',
-    auto_deref => 1,
-    provides   => {
-        elements => 'all_diseases',     # my @d = $map->all_diseases;
-        get      => 'disease',          # my $d = $map->disease(0);
+    ro, auto_deref,
+    traits  => ['Array'],
+    isa     => 'ArrayRef[Games::Pandemic::Disease]',
+    builder => '_diseases_builder',
+    handles => {
+        all_diseases => 'elements',     # my @d = $map->all_diseases;
+        disease      => 'get',          # my $d = $map->disease(0);
     },
 );
 
-has max_infections => ( is => 'ro', isa => 'Int', lazy_build => 1 );
+has max_infections => ( ro, lazy_build, isa => 'Int' );
 
-has name => (
-    is      => 'ro',
-    isa     => 'Str',
-    builder => '_build_name',
-);
+has name => ( ro, isa => 'Str', builder => '_build_name' );
 
 has start_city => (
-    is       => 'ro',
+    ro, weak_ref,
+    lazy,     # _cities needs to be built before
     isa      => 'Games::Pandemic::City',
     builder  => '_start_city_builder',
-    lazy     => 1, # _cities needs to be built before
-    weak_ref => 1,
 );
 
-has start_diseases => ( is=>'ro', isa=>'ArrayRef[Int]', auto_deref=>1, lazy_build => 1 );
+has start_diseases => ( ro, auto_deref, lazy_build, isa=>'ArrayRef[Int]' );
 
 
 # -- default builders / finishers
@@ -183,11 +177,13 @@ sub find_city {
 }
 
 
+sub infection_rates { die "should be implemented in child class."; }
+
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;
-
 
 
 =pod
@@ -198,13 +194,7 @@ Games::Pandemic::Map - pandemic map information
 
 =head1 VERSION
 
-version 1.092660
-
-=begin Pod::Coverage
-
-DEMOLISH
-
-=end Pod::Coverage
+version 1.111010
 
 =head1 METHODS
 
@@ -212,14 +202,10 @@ DEMOLISH
 
 Return the path the background image of the map.
 
-
-
 =head2 my $dir = $map->sharedir;
 
 Return the path to the private directory C<$dir> where C<$map> stores
 various files.
-
-
 
 =head2 my @cards = $map->cards;
 
@@ -227,23 +213,24 @@ Return a list of C<Games::Pandemic::Card>: special event cards depending
 on the map, plus one card per city defined in the map. They will be used
 for the regular deck. Note that the cards will B<not> be shuffled.
 
-
-
 =head2 my @cards = $map->disease_cards;
 
 Return a list of C<Games::Pandemic::Card::City>, one per city defined in
 the map. They will be used for the infection deck. Note that the cards
 will B<not> be shuffled.
 
-
-
 =head2 my $city = $map->find_city( $name );
 
+=head2 my @rates = $map->infection_rates;
 
+Return the infection rates. It's a list of numbers, which offset is the
+number of epidemics already encountered.
+
+=for Pod::Coverage DEMOLISH
 
 =head1 AUTHOR
 
-  Jerome Quelin
+Jerome Quelin
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -253,8 +240,8 @@ This is free software, licensed under:
 
   The GNU General Public License, Version 2, June 1991
 
-=cut 
-
+=cut
 
 
 __END__
+
